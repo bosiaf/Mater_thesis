@@ -12,6 +12,7 @@
 #include<utility>
 #include<chrono>
 #include<thread>
+#include<sys/stat.h>
 
 
 using namespace std;
@@ -526,6 +527,13 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 double personal::rtp(double rate)
 {
 	return (1 - exp( (-1)*rate ) );		
+}
+
+bool personal::fileExists(const string & file)
+{
+	struct stat buf;
+
+	return stat(file.c_str(), &buf) != -1;
 }
 
 //sequences class member functions
@@ -1243,26 +1251,47 @@ void epidemics::print_epidemics(string path)
 	{
 		//instantiate a stream for the output of V and healthy cells
 		string filename = string(path + "host_" + to_string((*it_h)->get_ID()));
-		ofstream fout(filename + ".dat", ios::app);
-		ofstream fout_hc(filename + "_healthy_cells.dat", ios::app);
+		ofstream fout, fout_hc;
 
-		if (!fout.is_open())
+		if (!fileExists(filename + ".dat"))
 		{
-			cout << "Could not establish connection with file " << filename + ".dat" << endl;
-			return;
-		}
-
-		if (!fout_hc.is_open())
-		{
-			cout << "Could not establish connection with file " << filename + "_healthy_cells.dat" << endl;
-			return;
-		}
-		//add a nice informative header just the first timestep
-		if (time == 0)
-		{
+			fout.open(filename + ".dat");
+			fout_hc.open(filename + "_healthy_cells.dat");
+			
+			if (!fout.is_open())
+			{
+				cout << "Could not establish connection with file " << filename + ".dat" << endl;
+				return;
+			}
+			if (!fout_hc.is_open())
+			{
+				cout << "Could not establish connection with file " << filename + "_healthy_cells.dat" << endl;
+				return;
+			}
+			//add a nice informative header just the first timestep
 			fout << "Time\tStrain\tVirion\tInfected cell" << endl;
 			fout_hc << "Time\tHealthy cells\tTotal cells\tTotal virions" << endl;
 		}
+		else
+		{
+			fout.open(filename + ".dat", ios::app);
+			fout_hc.open(filename + "_healthy_cells.dat", ios::app);
+
+			if (!fout.is_open())
+			{
+				cout << "Could not establish connection with file " << filename + ".dat" << endl;
+				return;
+			}
+
+			if (!fout_hc.is_open())
+			{
+				cout << "Could not establish connection with file " << filename + "_healthy_cells.dat" << endl;
+				return;
+			}
+		}
+		
+		
+		
 		//initialize counters for virions and infected cells
 		long int tot_vir = 0, tot_icell = 0;
 		//and now print the data
@@ -1299,20 +1328,34 @@ void epidemics::print_seq_epidemics(string path)
 	for (it_h; it_h != hosts.end(); ++it_h)
 	{
 		string filename = path + "host_" + to_string((*it_h)->get_ID()) + "_seq.dat";
-		ofstream fout(filename, ios::app);
+		ofstream fout;
 
-		//check that fout is correctly opened
-		if (!fout.is_open())
+		if (!fileExists(filename))
 		{
-			cout << "Could not establish connection with file " << filename << endl;
-			return;
-		}
+			fout.open(filename);
 
-		//print nice informative header the first time ever ever
-		if (time == 0)
-		{
+			//check that fout is correctly opened
+			if (!fout.is_open())
+			{
+				cout << "Could not establish connection with file " << filename << endl;
+				return;
+			}
+
+			//print nice informative header the first time ever ever
 			fout << "Time\tStrain\tSequence\tFitness" << endl;
 		}
+		else 
+		{
+			fout.open(filename, ios::app);
+
+			//check that fout is correctly opened
+			if (!fout.is_open())
+			{
+				cout << "Could not establish connection with file " << filename << endl;
+				return;
+			}
+		}
+
 		//print data to file
 		for (unsigned i = 0; i < (*it_h)->get_V().size(); ++i)
 		{
