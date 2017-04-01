@@ -250,3 +250,10 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+#others
+*.sln
+*.vcxproj
+*.filters
+*.user
+*.sh

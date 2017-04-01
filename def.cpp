@@ -1082,7 +1082,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 						f += get_new_fitness(ind[m], SNPs_list, o_nt[m], sq[ ind[m] ], gen);
 					}
 					cout << "New fitness is " << f << endl;
-					if(f < 0.2) f = 0.2;
+					if(f < 0.02) f = 0.02;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
 					sequences * s0 = new sequences(sq, f);
@@ -1374,9 +1374,13 @@ void epidemics::change_fitness(mt19937 & gen)
 	{
 		for(unsigned j = 0; j < hosts[i]->get_V().size(); ++j)
 		{
-			if(hosts[i]->get_V()[j]->get_sequence()->get_fitness() > 0.5)
+			if(hosts[i]->get_V()[j]->get_sequence()->get_fitness() > 0.02)
 			{
 				hosts[i]->get_V()[j]->change_fitness(rnorm(1, fit_change, 0.02, gen).back());
+			}
+			if (hosts[i]->get_V()[j]->get_sequence()->get_fitness() < 0.02)
+			{
+				hosts[i]->get_V()[j]->change_fitness(0.02 - hosts[i]->get_V()[j]->get_sequence()->get_fitness());
 			}
 		}
 	}	
