@@ -272,6 +272,36 @@ vector<long int> personal::sample(long int n, unsigned size, mt19937 & gen, unif
 	return result;
 }
 
+vector<long int> personal::sample_int_wo_repl(long int n, unsigned size, mt19937 & gen)
+{
+	vector<long int> result;
+	uniform_int_distribution<> d(0, n - 1);
+	if (size == 1)
+	{
+		result.push_back(d(gen));
+	}
+	else
+	{
+		unsigned i = 0;
+		while (i < size)
+		{
+			long int attempt = d(gen);
+			bool found = false;
+			for (unsigned j = 0; j < result.size(); ++j)
+			{
+				if (attempt == result[j]) found = true;
+			}
+			
+			if (!found)
+			{
+				result.push_back(attempt);
+				++i;
+			}
+		}
+	}
+	return result;
+}
+
 //evolution of a nucleotide (random evolution), takes as argument a random number from 0-1 unif dist
 char personal::evo_nt(vector<vector<double> > tmat, double random_nr, char old_nt)
 {
@@ -1017,7 +1047,8 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 			else if (n_mut == 1)
 			{
 				//...sample a position where this happens
-				long int ind = sample(s_sz, 1, gen, ud).back();
+				long int ind = sample_int_wo_repl(s_sz, 1, gen).back();
+				//long int ind = sample(s_sz, 1, gen, ud).back();
 				//record old nucleotide at that position
 				char o_nt = sq[ind];
 				//find new nucleotide
@@ -1053,7 +1084,8 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 			}
 			else if(n_mut > 1)
 			{
-				vector<long int> ind = sample(s_sz, n_mut, gen, ud);
+				vector<long int> ind = sample_int_wo_repl(s_sz, n_mut, gen);
+				//vector<long int> ind = sample(s_sz, n_mut, gen, ud);
 				vector<char> o_nt(n_mut);
 				for (unsigned m = 0; m < n_mut; ++m)
 				{

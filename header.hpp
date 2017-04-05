@@ -214,6 +214,8 @@ namespace personal
 
 	//sample samples size elements from 0 to (n-1) without replacement.
 	vector<long int> sample(long int n, unsigned size, mt19937 & gen, uniform_real_distribution<> d);
+	vector<long int> sample_int_wo_repl(long int n, unsigned size, mt19937 & gen);
+
 	//rtp (rate to probability) converts ODE rates into probabilities through
 	//1 - exp(-rate), since it is tuned to 1 day
 	double rtp(double rate);
