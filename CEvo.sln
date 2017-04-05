@@ -15,12 +15,12 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Debug|x64.ActiveCfg = Debug|x64
 		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Debug|x64.Build.0 = Debug|x64
-		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Debug|x86.ActiveCfg = Debug|Win32
-		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Debug|x86.Build.0 = Debug|Win32
+		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Debug|x86.ActiveCfg = Release|Win32
+		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Debug|x86.Build.0 = Release|Win32
 		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Release|x64.ActiveCfg = Release|x64
 		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Release|x64.Build.0 = Release|x64
-		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Release|x86.ActiveCfg = Release|Win32
-		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Release|x86.Build.0 = Release|Win32
+		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Release|x86.ActiveCfg = Debug|Win32
+		{FB22180A-E970-408C-A7D5-64B66D5C69FD}.Release|x86.Build.0 = Debug|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

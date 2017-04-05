@@ -124,7 +124,6 @@ istream& personal::operator >> (istream& fin, vector<vector<double> > & table)
 
 int personal::nt_to_i(char nt)
 {
-	cout << "nt is " << nt << " and " << (nt=='A') << endl;
 	if(nt == 'A') return 0;
 	else if (nt == 'G') return 1;
 	else if (nt == 'C') return 2;
@@ -222,12 +221,12 @@ vector<bool> personal::rber(int n, double p, mt19937 & genr)
 
 long int personal::smpl_weight(vector<long int> w, mt19937 & gen, uniform_real_distribution<> d)
 {
-	vector<double> w_csum(w.size());
+	size_t w_sz = w.size();
+	vector<double> w_csum(w_sz);
 	double r = d(gen);
 	w_csum[0] = w[0];
-
-	for (unsigned i = 1; i < w.size(); ++i)	w_csum[i] = w_csum[i-1] + w[i];
-    for (unsigned i = 0; i < w.size(); ++i)
+	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i-1] + w[i];
+    for (unsigned i = 0; i < w_sz; ++i)
     {
 	    w_csum[i] /= w_csum.back();
 	    if(w_csum[i] > r) return i;
@@ -238,15 +237,17 @@ long int personal::smpl_weight(vector<long int> w, mt19937 & gen, uniform_real_d
 
 long int personal::smpl_weight(vector<double> w, mt19937 & gen, uniform_real_distribution<> d)
 {
-	vector<double> w_csum(w.size());
+	size_t w_sz = w.size();
+	vector<double> w_csum(w_sz);
 	double r = d(gen);
 	w_csum[0] = w[0];
 
-	for (unsigned i = 1; i < w.size(); ++i)	w_csum[i] = w_csum[i-1] + w[i];
-    for (unsigned i = 0; i < w.size(); ++i)
+	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i-1] + w[i];
+	//vectorize this
+    for (unsigned i = 0; i < w_sz; ++i)
     {
 	    w_csum[i] /= w_csum.back();
-	    if(w_csum[i] > r) return i;
+	    if (w_csum[i] > r) return i;
 	}
 	cout << "not found" << endl;
 	return -1;
@@ -254,8 +255,11 @@ long int personal::smpl_weight(vector<double> w, mt19937 & gen, uniform_real_dis
 
 vector<long int> personal::sample(long int n, unsigned size, mt19937 & gen, uniform_real_distribution<> d)
 {
+	//THINK OF SOMETHING BETTER
+	
 	vector<long int> result;
 	vector<long int> we;
+	
 	we.assign(n,1);
 
 	for (unsigned i = 0; i < size; ++i)
@@ -264,6 +268,7 @@ vector<long int> personal::sample(long int n, unsigned size, mt19937 & gen, unif
 		result.push_back(next);
 		--we[next];
 	}
+
 	return result;
 }
 
@@ -280,9 +285,7 @@ char personal::evo_nt(vector<vector<double> > tmat, double random_nr, char old_n
 	for (unsigned i = 1; i < 4; ++i) 
 	{
 		csum[i] = csum[i-1] + tmat[nt][i];
-		cout << csum[i] << " ";
 	}
-	cout << endl;
 	for (unsigned i = 0; i < 4; ++i)
 	{
 		if (random_nr < csum[i]) 
@@ -728,6 +731,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	// initialize fit (1 per strain), precaclulated exp(k*fit_i) (1 per strain)
 	// number of virions ( 1 per strain) and total number of virion v_sum, as well as
 	// the sum S_i^{N_STR}(fit_i * n_vir_i)
+	//PARALLEL
 	for (unsigned i = 0; i < N_STR; ++i)
 	{
 		fit[i] = V[i]->get_sequence()->get_fitness();
@@ -736,6 +740,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		v_sum += static_cast<long>(weight[i]);
 		sum_fi_vi += fit[i]*weight[i];
 	}
+	//PARALLEL
 	for (unsigned i = 0; i < N_STR; ++i)
 	{
 		weight[i] *= fit[i];
@@ -971,7 +976,6 @@ double host::get_new_fitness(unsigned position, vector<unsigned> SNPs_list, char
 	//separate the cases of being in a SNP position or being in a neutral position.
 	if(is_SNP)
 	{
-		cout << "IT IS A SNP!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		return (fit_snp);
 	}
 	else
@@ -1081,7 +1085,6 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					{
 						f += get_new_fitness(ind[m], SNPs_list, o_nt[m], sq[ ind[m] ], gen);
 					}
-					cout << "New fitness is " << f << endl;
 					if(f < 0.02) f = 0.02;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();

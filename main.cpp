@@ -81,7 +81,7 @@ int main(int argc, char * argv[])
 	for (unsigned tstep = 0; tstep < MAX_TSTEP; ++tstep)
 	{		
 		//check if it is time to infect another host
-		if(t_next_inf == 0)
+		while (t_next_inf == 0)
 		{
 			cout << "New host infected at time " << e.get_time() << "!" << endl;
 			e.new_host_infection(gen);
@@ -126,10 +126,11 @@ int main(int argc, char * argv[])
 			e.delete_host(host_to_drop[i-1]);
 		}
 		//print the epidemics
-		e.print_epidemics();
+		//e.print_epidemics();
 		e.print_epidemics(path_output_dyn);
-		e.print_seq_epidemics();
+		//e.print_seq_epidemics();
 		e.print_seq_epidemics(path_output_seq);
+		cout << "Time = " << e.get_time() << endl;
 		//increment the time by 1
 		e.set_time(1);
 		//decrement the time to the next infection of a host
