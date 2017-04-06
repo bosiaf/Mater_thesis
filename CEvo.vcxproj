@@ -104,6 +104,7 @@
     <ClCompile>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <Optimization>Full</Optimization>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

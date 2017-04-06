@@ -12,6 +12,7 @@
 #include<utility>
 #include<chrono>
 #include<thread>
+#include<omp.h>
 #include<sys/stat.h>
 
 
@@ -762,20 +763,25 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	// number of virions ( 1 per strain) and total number of virion v_sum, as well as
 	// the sum S_i^{N_STR}(fit_i * n_vir_i)
 	//PARALLEL
-	for (unsigned i = 0; i < N_STR; ++i)
+	#pragma omp parallel for
+	for (int i = 0; i < N_STR; ++i)
 	{
 		fit[i] = V[i]->get_sequence()->get_fitness();
 		eKF[i] = exp(k*fit[i]);
-		weight[i] = V[i]->get_vir();
-		v_sum += static_cast<long>(weight[i]);
-		sum_fi_vi += fit[i]*weight[i];
-	}
-	//PARALLEL
-	for (unsigned i = 0; i < N_STR; ++i)
-	{
-		weight[i] *= fit[i];
+		weight[i] = V[i]->get_vir() * fit[i];
 	}
 
+	#pragma omp parallel for reduction(+:v_sum)
+	for (int i = 0; i < N_STR; ++i)
+	{
+		v_sum += static_cast<long>(weight[i]);
+	}
+	#pragma omp parallel for reduction(+:sum_fi_vi)
+	for (int i = 0; i < N_STR; ++i)
+	{
+		sum_fi_vi += fit[i] * weight[i];
+	}	
+	
 	double exp_prob = exp(-k * sum_fi_vi);
 
 	for (size_t i = 0; i < hc; ++i)
@@ -810,12 +816,14 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//
 	//Get total number of cells tot_c
 	long int tot_c = hc;
-	for (unsigned i = 0; i < V.size(); ++i)
+	#pragma omp parallel for reduction(+:tot_c)
+	for (int i = 0; i < V.size(); ++i)
 	{
 		tot_c += V[i]->get_icell();
 	}
 	double immunocompetence = static_cast<double>(tot_c)/h0;
 
+	//PARALLEL, NEED TO THINK ABOUT RANDOM NUMBER GENERATOR
 	for (unsigned i = 0; i < N_STR; ++i)
 	{
 		int norm_burst;
