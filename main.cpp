@@ -6,6 +6,7 @@
 #include<vector>
 #include<string>
 #include"header.hpp"
+#include<omp.h>
 
 using namespace std;
 using namespace personal;
@@ -19,6 +20,7 @@ vector<long int> personal::weight_not_snp;
 vector<double> personal::fit_not_snp;
 bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys;
 mt19937 personal::gen(42);
+vector<mt19937*> personal::gens;
 
 unsigned host::total = 0;
 
@@ -26,7 +28,10 @@ unsigned host::total = 0;
 
 int main(int argc, char * argv[])
 {
-
+	for (int i = 0; i < omp_get_max_threads(); ++i)
+	{
+		gens.push_back(new mt19937(omp_get_thread_num()));
+	}
 	//if number of arguments provided is correct
 	if (argc == 2){
 	//read in parameters, in mm^{-3} day{-1}
@@ -100,7 +105,7 @@ int main(int argc, char * argv[])
 
 			//infection occurs and death takes its toll
 			//with virions and infected cells (strain specific)
-			is_host_full = e.get_hosts()[i]->wi_host_inf_death(k_inf, d_ic, d_v, burst_size, gen, tmat,SNPs, p_mut, e.get_time());
+			is_host_full = e.get_hosts()[i]->wi_host_inf_death(k_inf, d_ic, d_v, burst_size, gen, tmat, SNPs, p_mut, e.get_time());
 			//death comes to take everybody:
 			//also target healthy cells
 			e.get_hosts()[i]->set_hc(-rbinom(1, e.get_hosts()[i]->get_hc(), rtp(d_hc), gen).back());
@@ -146,6 +151,17 @@ int main(int argc, char * argv[])
 		{
 			break;
 		}
+	}
+
+	//Clean up allocated memory
+	for (int i = omp_get_max_threads(); i > 0; --i) delete gens[i];
+	for (unsigned i = e.get_hosts().size(); i > 0; --i)
+	{
+		for (unsigned j = e.get_hosts()[i - 1]->get_V().size(); j > 0; --j)
+		{
+			e.get_hosts()[i - 1]->delete_strain(j - 1);
+		}
+		e.delete_host(i - 1);
 	}
 	return 0;
 }

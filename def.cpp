@@ -1,6 +1,7 @@
 #include<iostream>
 #include<iomanip>
 #include<vector>
+#include<list>
 #include<string>
 #include<cmath>
 #include<fstream>
@@ -43,7 +44,7 @@ istream& personal::operator >> (istream& fin, vector<double> & row)
 	field >> rname;
 
 	//read in the comma separated field without the row name
-	while(getline(ss, element, ','))
+	while (getline(ss, element, ','))
 	{
 		stringstream field(element);
 		//set up the variable for storing
@@ -53,7 +54,7 @@ istream& personal::operator >> (istream& fin, vector<double> & row)
 		//and put the read in variable in the row vector
 		row.push_back(t_prob);
 	}
-	
+
 	/*for (unsigned i = 0; i < row.size(); ++i)
 	{
 		cout << row[i] << "\t";
@@ -82,7 +83,7 @@ istream& personal::operator >> (istream& fin, vector<string> & row)
 	string element;
 
 	//read in the comma separated field
-	while(getline(ss, element, ','))
+	while (getline(ss, element, ','))
 	{
 		stringstream field(element);
 		//set up the variable for storing
@@ -111,7 +112,7 @@ istream& personal::operator >> (istream& fin, vector<vector<double> > & table)
 	table.clear();
 	vector<double> row;
 
-	while(fin >> row)
+	while (fin >> row)
 	{
 		table.push_back(row);
 	}
@@ -125,7 +126,7 @@ istream& personal::operator >> (istream& fin, vector<vector<double> > & table)
 
 int personal::nt_to_i(char nt)
 {
-	if(nt == 'A') return 0;
+	if (nt == 'A') return 0;
 	else if (nt == 'G') return 1;
 	else if (nt == 'C') return 2;
 	else if (nt == 'T')	return 3;
@@ -138,7 +139,7 @@ int personal::nt_to_i(char nt)
 
 char personal::i_to_nt(int nt)
 {
-	if(nt == 0) return 'A';
+	if (nt == 0) return 'A';
 	else if (nt == 1) return 'G';
 	else if (nt == 2) return 'C';
 	else if (nt == 3) return 'T';
@@ -226,11 +227,15 @@ long int personal::smpl_weight(vector<long int> w, mt19937 & gen, uniform_real_d
 	vector<double> w_csum(w_sz);
 	double r = d(gen);
 	w_csum[0] = w[0];
-	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i-1] + w[i];
-    for (unsigned i = 0; i < w_sz; ++i)
-    {
-	    w_csum[i] /= w_csum.back();
-	    if(w_csum[i] > r) return i;
+	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i - 1] + w[i];
+#pragma omp parallel for
+	for (int i = 0; i < w_sz; ++i)
+	{
+		w_csum[i] /= w_csum.back();
+	}
+	for (unsigned i = 0; i < w_sz; ++i)
+	{
+		if (w_csum[i] > r) return i;
 	}
 	cout << "not found" << endl;
 	return -1;
@@ -238,30 +243,37 @@ long int personal::smpl_weight(vector<long int> w, mt19937 & gen, uniform_real_d
 
 long int personal::smpl_weight(vector<double> w, mt19937 & gen, uniform_real_distribution<> d)
 {
+	//discrete_distribution<long int> dd(w.begin(), w.end());
+	//return dd(gen);
 	size_t w_sz = w.size();
 	vector<double> w_csum(w_sz);
 	double r = d(gen);
 	w_csum[0] = w[0];
 
-	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i-1] + w[i];
+	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i - 1] + w[i];
 	//vectorize this
-    for (unsigned i = 0; i < w_sz; ++i)
-    {
-	    w_csum[i] /= w_csum.back();
-	    if (w_csum[i] > r) return i;
+#pragma omp parallel for
+	for (int i = 0; i < w_sz; ++i)
+	{
+		w_csum[i] /= w_csum.back();
+	}
+	for (unsigned i = 0; i < w_sz; ++i)
+	{
+		if (w_csum[i] > r) return i;
 	}
 	cout << "not found" << endl;
 	return -1;
 }
 
+//DEPRECATED
 vector<long int> personal::sample(long int n, unsigned size, mt19937 & gen, uniform_real_distribution<> d)
 {
 	//THINK OF SOMETHING BETTER
-	
+
 	vector<long int> result;
 	vector<long int> we;
-	
-	we.assign(n,1);
+
+	we.assign(n, 1);
 
 	for (unsigned i = 0; i < size; ++i)
 	{
@@ -292,7 +304,7 @@ vector<long int> personal::sample_int_wo_repl(long int n, unsigned size, mt19937
 			{
 				if (attempt == result[j]) found = true;
 			}
-			
+
 			if (!found)
 			{
 				result.push_back(attempt);
@@ -313,19 +325,19 @@ char personal::evo_nt(vector<vector<double> > tmat, double random_nr, char old_n
 	//initialize to 3 to prevent rounding errors
 	int new_nt = 2;
 
-	for (unsigned i = 1; i < 4; ++i) 
+	for (unsigned i = 1; i < 4; ++i)
 	{
-		csum[i] = csum[i-1] + tmat[nt][i];
+		csum[i] = csum[i - 1] + tmat[nt][i];
 	}
 	for (unsigned i = 0; i < 4; ++i)
 	{
-		if (random_nr < csum[i]) 
+		if (random_nr < csum[i])
 		{
 			new_nt = i;
 			break;
 		}
 	}
-	
+
 	result = i_to_nt(new_nt);
 
 	return result;
@@ -354,7 +366,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 	//close the connection to the file
 	file_in.close();
-		
+
 	cout << "\n****************************************" << endl;
 	cout << "Reading Transition Matrix:" << endl;
 	for (unsigned i = 0; i < h.size(); ++i)
@@ -395,7 +407,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 			}
 		}
 	}
-	
+
 	cout << "\n****************************************" << endl;
 	cout << "Normalized Transition Matrix:" << endl;
 	for (unsigned i = 0; i < h.size(); ++i)
@@ -416,7 +428,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 		cout << endl;
 	}
 	cout << "****************************************\n" << endl;
-	
+
 }
 
 void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, unsigned & seed)
@@ -452,7 +464,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 
 	//Print that you're readin in the parameters
 	cout << "\n***********************************" << endl;
-	cout << "I am reading in the parameters.\n" << endl;	
+	cout << "I am reading in the parameters.\n" << endl;
 	//read in the file line per line, vectors are first read in the string buffer
 	inp >> max_tstep;
 	inp >> path_to_tmat;
@@ -483,7 +495,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> ad_imm_sys;
 	inp >> fit_change;
 	inp >> seed;
-	
+
 	//first look which one of the two versions of SNPs was given, 
 	//checking if the dash is there.
 	size_t found = snps.find('-');
@@ -491,7 +503,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	if (found != string::npos)
 	{
 		//read in start and end by splitting the line at the dash
-		int start,end;
+		int start, end;
 		string element;
 		stringstream read_range(snps);
 		getline(read_range, element, '-');
@@ -518,7 +530,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	copy(istream_iterator<double>(buffer1), istream_iterator<double>(), back_inserter(fit_not_snp));
 	istringstream buffer2(weight_not_snp_str);
 	copy(istream_iterator<long int>(buffer2), istream_iterator<long int>(), back_inserter(weight_not_snp));
-	
+
 	cout << "Time steps to simulate: " << max_tstep << endl;
 	cout << "Path to transistion matrix: " << path_to_tmat << endl;
 	cout << "Path to output folder for dynamics files: " << path_output_dyn << endl;
@@ -560,7 +572,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 //for description, see header file
 double personal::rtp(double rate)
 {
-	return (1 - exp( (-1)*rate ) );		
+	return (1 - exp((-1)*rate));
 }
 
 bool personal::fileExists(const string & file)
@@ -751,8 +763,9 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	vector<double> weight(N_STR);
 	long int v_sum = 0;
 	double sum_fi_vi = 0;
-	uniform_real_distribution<> u01(0.0,1.0);
+	uniform_real_distribution<> u01(0.0, 1.0);
 	vector<unsigned> to_elim;
+	vector<vector<unsigned> > parallel_elim(omp_get_max_threads());
 	//make a copy of healthy_cells to run the loop on, if not it will change the
 	//loop variable and analyze less than the total of healthy cells when
 	//--healthy_cells is called.
@@ -763,27 +776,30 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	// number of virions ( 1 per strain) and total number of virion v_sum, as well as
 	// the sum S_i^{N_STR}(fit_i * n_vir_i)
 	//PARALLEL
-	#pragma omp parallel for
-	for (int i = 0; i < N_STR; ++i)
+#pragma omp parallel 
 	{
-		fit[i] = V[i]->get_sequence()->get_fitness();
-		eKF[i] = exp(k*fit[i]);
-		weight[i] = V[i]->get_vir() * fit[i];
-	}
+#pragma omp for
+		for (int i = 0; i < N_STR; ++i)
+		{
+			fit[i] = V[i]->get_sequence()->get_fitness();
+			eKF[i] = exp(k*fit[i]);
+			weight[i] = V[i]->get_vir();// *fit[i];
+		}
 
-	#pragma omp parallel for reduction(+:v_sum)
-	for (int i = 0; i < N_STR; ++i)
-	{
-		v_sum += static_cast<long>(weight[i]);
+#pragma omp for nowait reduction(+:v_sum)
+		for (int i = 0; i < N_STR; ++i)
+		{
+			v_sum += static_cast<long>(weight[i]);
+		}
+#pragma omp for reduction(+:sum_fi_vi)
+		for (int i = 0; i < N_STR; ++i)
+		{
+			sum_fi_vi += fit[i] * weight[i];
+		}
+
 	}
-	#pragma omp parallel for reduction(+:sum_fi_vi)
-	for (int i = 0; i < N_STR; ++i)
-	{
-		sum_fi_vi += fit[i] * weight[i];
-	}	
-	
 	double exp_prob = exp(-k * sum_fi_vi);
-
+	cout << "I am before healthy cell infection loop with " << hc << " healthy cells" << endl;
 	for (size_t i = 0; i < hc; ++i)
 	{
 		prob = 1.0 - exp_prob;
@@ -798,9 +814,9 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 			//The weight vector is adapted, the number of healthy cells decreases of one,
 			//and the total number of virions v_sum too.
 			V[i_str]->set_vir(-1);
-		    V[i_str]->set_tcell(1);
+			V[i_str]->set_tcell(1);
 			--healthy_cells;
-			weight[i_str] -= fit[i_str];
+			--weight[i_str]; //-= fit[i_str];
 			--v_sum;
 			exp_prob *= eKF[i_str];
 		}
@@ -808,7 +824,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	}
 	//Now evolution can take place on the temporarly infected cells  tcell 
 	//(infected, but not yet sure from which sequence yet)
-	evolve(gen, tmat, SNPs_list, p_mut, t); 
+	evolve(gen, tmat, SNPs_list, p_mut, t);
 
 	//death comes to gather everyone (infected cells are destroyed, then virion destroyed,
 	//then virions are created.
@@ -816,50 +832,55 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//
 	//Get total number of cells tot_c
 	long int tot_c = hc;
-	#pragma omp parallel for reduction(+:tot_c)
+#pragma omp parallel for reduction(+:tot_c) if(N_STR>24)
 	for (int i = 0; i < V.size(); ++i)
 	{
 		tot_c += V[i]->get_icell();
 	}
-	double immunocompetence = static_cast<double>(tot_c)/h0;
+	double immunocompetence = static_cast<double>(tot_c) / h0;
+
 
 	//PARALLEL, NEED TO THINK ABOUT RANDOM NUMBER GENERATOR
-	for (unsigned i = 0; i < N_STR; ++i)
+	//MIGHT USE VECTOR OF RNG FOR NOT TOO MANY NUMBERS
+	//CHANGED GEN TO GENL
+	//Loop over old strains ( not the newest just created ones.)
+	for (int i = 0; i < N_STR; ++i)
 	{
-		int norm_burst;
+		mt19937 genl = *(gens[omp_get_thread_num()]);
+		int norm_burst = 0;
 		//Calculate the burst size with k_fit as fitness dependency factor
 		if (V[i]->get_icell() != 0)
 		{
-			norm_burst = static_cast<int>(rnorm(1, (1 + k_fit * fit[i])*burst*V[i]->get_icell(), fit[i] * burst*V[i]->get_icell() / 3.0, gen).back());
+			norm_burst = static_cast<int>(rnorm(1, (1 + k_fit * fit[i])*burst*V[i]->get_icell(), fit[i] * burst*V[i]->get_icell() / 3.0, genl).back());
 		}
 		else
 		{
 			norm_burst = 0;
 		}
 		if (norm_burst < 0) norm_burst = 0;
-		
+
 		//rtp() generates probabilities from rates for a time of 1 day
 		//switch on the option selected for in the parameter file
 		if (dic_fit_dep)
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence/fit[i]), gen).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence / fit[i]), genl).back());
 			}
 			else
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc/fit[i]), gen).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc / fit[i]), genl).back());
 			}
 		}
 		else
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence), gen).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence), genl).back());
 			}
 			else
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc), gen).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc), genl).back());
 			}
 		}
 
@@ -869,43 +890,56 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence/fit[i]), gen).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence / fit[i]), genl).back());
 			}
 			else
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir/fit[i]), gen).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir / fit[i]), genl).back());
 			}
 		}
 		else
 		{
 			if (ad_imm_sys)
-			{	
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence), gen).back());
+			{
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence), genl).back());
 			}
 			else
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir), gen).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir), genl).back());
 			}
 		}
 		//burst virions
-    	V[i]->set_vir(norm_burst);
+		V[i]->set_vir(norm_burst);
 		//if both virion number and infected cell number of a strain are = 0
 		//eliminate the strain.
 		if (!(V[i]->get_vir() && V[i]->get_icell()))
 		{
-			to_elim.push_back(i);
+			//to_elim.push_back(i);
+			parallel_elim[omp_get_thread_num()].push_back(i);
 		}
 		else
 		{
 			result = 1;
 		}
 	}
-	//strains stored for elimination are here deleted. They are deleted in reverse order to eliminate the problem of the vector V shrinking eliminating stuff it should not eliminate (index mismatch)
+	//strains stored for elimination are here deleted.
+	//Go through the array once again and look for the empty strains to eliminate.
+	for (int i = 0; i < parallel_elim.size(); ++i)
+	{
+		for (int j = 0; j < parallel_elim[i].size(); ++j)
+		{
+			to_elim.push_back(parallel_elim[i][j]);
+		}
+	}
+
+	sort(to_elim.begin(), to_elim.end());
+
 	for (unsigned i = to_elim.size(); i > 0; --i)
 	{
-		delete_strain(to_elim[i-1]);
-	}	
-	return result;	
+		delete_strain(to_elim[i - 1]);
+	}
+
+	return result;
 }
 
 //THIS FUNCTION IS BIASED AND SHOULD BE CHANGED: FIRST STRAINS HAVE MORE HEALTHY CELLS AT DISPOSAL FOR INFECTION THAN LAST STRAINS, version w/ virion loop and not healthy cells loop
@@ -948,7 +982,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc), gen).back());
 		//virions, that die and are born, fitness does its magic here.
 		V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir/fit), gen).back());
-	    V[i]->set_vir(rnorm(1, fit*burst*V[i]->get_icell(), fit*burst*V[i]->get_icell()/5.0, gen).back());
+		V[i]->set_vir(rnorm(1, fit*burst*V[i]->get_icell(), fit*burst*V[i]->get_icell()/5.0, gen).back());
 		if (!(V[i]->get_vir() && V[i]->get_icell()))
 		{
 			to_elim.push_back(i);
@@ -961,8 +995,8 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	for (unsigned i = 0; i < to_elim.size(); ++i)
 	{
 		delete_strain(to_elim[i]);
-	}	
-	return result;	
+	}
+	return result;
 }
 */
 
@@ -982,7 +1016,7 @@ void host::delete_strain(unsigned index)
 	vector<strain*>::iterator it = V.begin();
 	if (index >= V.size())
 	{
-		cout << "Index is out of bounds" << endl;
+		cout << "Index is out of bounds, boy " << endl;
 	}
 	else
 	{
@@ -1010,9 +1044,9 @@ double host::get_new_fitness(unsigned position, vector<unsigned> SNPs_list, char
 	//search for the mutation position in the SNP list. If found, return true
 	bool is_SNP = binary_search(SNPs_list.begin(), SNPs_list.end(), position);
 	//generate a discrete distribution with weights read in from the parameters
-	discrete_distribution<> d (weight_not_snp.begin(), weight_not_snp.end());
+	discrete_distribution<> d(weight_not_snp.begin(), weight_not_snp.end());
 	//separate the cases of being in a SNP position or being in a neutral position.
-	if(is_SNP)
+	if (is_SNP)
 	{
 		return (fit_snp);
 	}
@@ -1025,7 +1059,7 @@ double host::get_new_fitness(unsigned position, vector<unsigned> SNPs_list, char
 void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> SNPs_list, double p_mut, unsigned time)
 {
 	unsigned s_sz = V[0]->get_sequence()->get_size();
-	uniform_real_distribution<> ud(0.0,1.0);
+	uniform_real_distribution<> ud(0.0, 1.0);
 	//get number of mutation per sequence
 	//and get where on the single sequence these mutations happen
 	//rbinom(1, seq_length, p.mut).back()
@@ -1034,18 +1068,19 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 	//to generate the new fitness, taking into account what kind of mutation it is.
 	//If it is not a SNP, fitness can either stay the same or decrease, if it is a SNP, increase
 	//fitness through escape in a first approximation (better models will follow)
-	for (unsigned str = 0; str < V.size(); ++str)
+	//use constant variable to prevent down scaling of loop
+	long N_STR = V.size();
+	for (int str = 0; str < N_STR; ++str)
 	{
 		//using this variable prevents down-scaling of for loop
 		long int temp = V[str]->get_tcell();
-		for (size_t v = 0; v < temp; ++v)
+		for (int v = 0; v < temp; ++v)
 		{
-
 			V[str]->set_tcell(-1);
 			//copy sequence in order not to change the strain sequence (would affect each virion
 			//in the same strain)
 			string sq = V[str]->get_sequence()->get_sequence();
-			unsigned n_mut = rbinom(1, s_sz, p_mut, gen).back();
+			unsigned n_mut = rbinom(1, s_sz, p_mut, *(gens[omp_get_thread_num()])).back();
 			//if there are no mutations...
 			if (n_mut == 0)
 			{
@@ -1055,12 +1090,12 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 			else if (n_mut == 1)
 			{
 				//...sample a position where this happens
-				long int ind = sample_int_wo_repl(s_sz, 1, gen).back();
+				long int ind = sample_int_wo_repl(s_sz, 1, *(gens[omp_get_thread_num()])).back();
 				//long int ind = sample(s_sz, 1, gen, ud).back();
 				//record old nucleotide at that position
 				char o_nt = sq[ind];
 				//find new nucleotide
-				char subst = evo_nt(tmat, ud(gen), sq[ind]);
+				char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind]);
 				//substitute the old with the new
 				sq[ind] = subst;
 				//now look for the sequence in the already available sequences
@@ -1081,25 +1116,28 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 				if (!found)
 				{
 					//get a fitness
-					double f = V[str]->get_sequence()->get_fitness() + get_new_fitness(ind, SNPs_list, o_nt, subst, gen);
+					double f = V[str]->get_sequence()->get_fitness() + get_new_fitness(ind, SNPs_list, o_nt, subst, *(gens[omp_get_thread_num()]));
 					if (f < 0.2) f = 0.2;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
 					sequences * s0 = new sequences(sq, f);
 					strain * st = new strain(s0, n_str, time);
-					add_line(st);
-				}			
+					#pragma omp critical
+					{
+						add_line(st);
+					}
+				}
 			}
-			else if(n_mut > 1)
+			else if (n_mut > 1)
 			{
-				vector<long int> ind = sample_int_wo_repl(s_sz, n_mut, gen);
+				vector<long int> ind = sample_int_wo_repl(s_sz, n_mut, *(gens[omp_get_thread_num()]));
 				//vector<long int> ind = sample(s_sz, n_mut, gen, ud);
 				vector<char> o_nt(n_mut);
 				for (unsigned m = 0; m < n_mut; ++m)
 				{
-					o_nt[m] = sq[ ind[m] ];
-					char subst = evo_nt(tmat, ud(gen), sq[ ind[m] ]);
-					sq[ ind[m] ] = subst;
+					o_nt[m] = sq[ind[m]];
+					char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind[m]]);
+					sq[ind[m]] = subst;
 				}
 
 				bool found = false;
@@ -1123,19 +1161,21 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					double f = V[str]->get_sequence()->get_fitness();
 					for (unsigned m = 0; m < n_mut; ++m)
 					{
-						f += get_new_fitness(ind[m], SNPs_list, o_nt[m], sq[ ind[m] ], gen);
+						f += get_new_fitness(ind[m], SNPs_list, o_nt[m], sq[ind[m]], *(gens[omp_get_thread_num()]));
 					}
-					if(f < 0.02) f = 0.02;
+					if (f < 0.02) f = 0.02;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
 					sequences * s0 = new sequences(sq, f);
 					strain * st = new strain(s0, n_str, time);
-					add_line(st);
-
-				}			
+					#pragma omp critical
+					{
+						add_line(st);
+					}
+				}
 			}
 		}
-	}	
+	}
 }
 
 vector<strain*> host::get_V()
@@ -1158,8 +1198,8 @@ void host::print_seq()
 {
 	for (unsigned i = 0; i < V.size(); ++i)
 	{
-		cout << "Strain\t" << V[i]->get_ID() << endl; 
-		cout << "Sequence\t" <<(V[i]->get_sequence())->get_sequence() << endl;
+		cout << "Strain\t" << V[i]->get_ID() << endl;
+		cout << "Sequence\t" << (V[i]->get_sequence())->get_sequence() << endl;
 		cout << "Fitness\t" << (V[i]->get_sequence())->get_fitness() << endl;
 	}
 }
@@ -1219,15 +1259,15 @@ long int epidemics::next_inf_time(double k, mt19937 & gen)
 void epidemics::new_host_infection(mt19937 & gen)
 {
 	vector<host*>::iterator it = hosts.begin();
-	host * inf = *(it + runif_int(1, 0, (hosts.size()-1), gen).back());
-	
+	host * inf = *(it + runif_int(1, 0, (hosts.size() - 1), gen).back());
+
 	vector<strain*> inf_strains = inf->get_V();
 	//vector<strain*>::iterator it_s = inf_strains.begin();
 	//probs is a container for the weigths of the viruses
 	vector<long int> probs;
 	for (unsigned i = 0; i < inf_strains.size(); ++i)
 	{
-	//if you want to change the weighting, here it is happening
+		//if you want to change the weighting, here it is happening
 		probs.push_back(inf_strains[i]->get_vir());
 	}
 	//now sample the sequences in the selected host, weighting them
@@ -1241,14 +1281,14 @@ void epidemics::new_host_infection(mt19937 & gen)
 	//evolve independently
 	sequences * a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1);
 	//the new host starts with v0 virions, but could actually start with a random number of virions.
-	int n = static_cast<int>(rnorm(1, v0, v0/3 , gen).back());
-	if(n < 0) n = 1;
+	int n = static_cast<int>(rnorm(1, v0, v0 / 3, gen).back());
+	if (n < 0) n = 1;
 	strain * b = new strain(a, n, 0, 0, 1, time);
 	mt19937 gen2(host::total + 1);
 	host * h_new = new host(h0, b, gen2);
 	add_host(h_new);
 }
-		
+
 
 void epidemics::add_host(host * h)
 {
@@ -1258,14 +1298,14 @@ void epidemics::add_host(host * h)
 void epidemics::delete_host(unsigned index)
 {
 	vector<host*>::iterator it = hosts.begin();
-	if(index >= hosts.size())
+	if (index >= hosts.size())
 	{
-		cout << "Index out of bounds" << endl;
+		cout << "Index out of bounds, 'tard" << endl;
 	}
 	else
 	{
 		delete(*(it + index));
-		hosts.erase(it+index);
+		hosts.erase(it + index);
 	}
 }
 
@@ -1300,7 +1340,7 @@ void epidemics::print_epidemics(string path)
 		{
 			fout.open(filename + ".dat");
 			fout_hc.open(filename + "_healthy_cells.dat");
-			
+
 			if (!fout.is_open())
 			{
 				cout << "Could not establish connection with file " << filename + ".dat" << endl;
@@ -1332,15 +1372,15 @@ void epidemics::print_epidemics(string path)
 				return;
 			}
 		}
-		
-		
-		
+
+
+
 		//initialize counters for virions and infected cells
 		long int tot_vir = 0, tot_icell = 0;
 		//and now print the data
 		for (unsigned i = 0; i < (*it_h)->get_V().size(); ++i)
 		{
-			fout << time << "\t" << (*it_h)->get_V()[i]->get_ID() << "\t"; 
+			fout << time << "\t" << (*it_h)->get_V()[i]->get_ID() << "\t";
 			fout << (*it_h)->get_V()[i]->get_vir() << "\t";
 			fout << (*it_h)->get_V()[i]->get_icell() << endl;
 			tot_vir += (*it_h)->get_V()[i]->get_vir();
@@ -1387,7 +1427,7 @@ void epidemics::print_seq_epidemics(string path)
 			//print nice informative header the first time ever ever
 			fout << "Time\tStrain\tSequence\tFitness" << endl;
 		}
-		else 
+		else
 		{
 			fout.open(filename, ios::app);
 
@@ -1415,9 +1455,9 @@ void epidemics::change_fitness(mt19937 & gen)
 {
 	for (unsigned i = 0; i < hosts.size(); ++i)
 	{
-		for(unsigned j = 0; j < hosts[i]->get_V().size(); ++j)
+		for (unsigned j = 0; j < hosts[i]->get_V().size(); ++j)
 		{
-			if(hosts[i]->get_V()[j]->get_sequence()->get_fitness() > 0.02)
+			if (hosts[i]->get_V()[j]->get_sequence()->get_fitness() > 0.02)
 			{
 				hosts[i]->get_V()[j]->change_fitness(rnorm(1, fit_change, 0.02, gen).back());
 			}
@@ -1426,12 +1466,12 @@ void epidemics::change_fitness(mt19937 & gen)
 				hosts[i]->get_V()[j]->change_fitness(0.02 - hosts[i]->get_V()[j]->get_sequence()->get_fitness());
 			}
 		}
-	}	
+	}
 }
 
 bool epidemics::is_it_over()
 {
-	if(hosts.size() == 0)
+	if (hosts.size() == 0)
 	{
 		cout << "\n**************************************" << endl;
 		cout << "EPIDEMICS IS OVER" << endl;

@@ -21,6 +21,7 @@ namespace personal
 	extern vector<long int> weight_not_snp;
 	extern vector<double> fit_not_snp;
 	extern mt19937 gen;
+	extern vector<mt19937*> gens;
 	extern bool dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys;
 
 
