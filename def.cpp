@@ -265,24 +265,81 @@ long int personal::smpl_weight(vector<double> w, mt19937 & gen, uniform_real_dis
 	return -1;
 }
 
-//DEPRECATED
-vector<long int> personal::sample(long int n, unsigned size, mt19937 & gen, uniform_real_distribution<> d)
+//rand and init functions from Vose alias method
+//"A linear algorithm for generating random numbers
+//with a given distribution"
+
+//Init function
+void personal::Vose_smpl_init(vector<double> p, vector<double> & probs, vector<int> & alias, int size)
 {
-	//THINK OF SOMETHING BETTER
+	int l = 0, s = 0;
+	vector<int> large(size);
+	vector<int> small(size);
 
-	vector<long int> result;
-	vector<long int> we;
-
-	we.assign(n, 1);
-
-	for (unsigned i = 0; i < size; ++i)
+	for (int j = 0; j < size; ++j)
 	{
-		long int next = smpl_weight(we, gen, d);
-		result.push_back(next);
-		--we[next];
+		if (p[j] > (1.0 / size))
+		{
+			large[l] = j;
+			++l;
+		}
+		else
+		{
+			small[s] = j;
+			++s;
+		}
 	}
+	while (s != 0 && l != 0)
+	{
+		--s;
+		--l;
+		int j = small[s];
+		int k = large[l];
+		probs[j] = size*p[j];
+		alias[j] = k;
+		p[k] += p[j] - 1.0 / size;
 
-	return result;
+		if (p[k] > 1.0 / size)
+		{
+			large[l] = k;
+			++l;
+		}
+		else
+		{
+			small[s] = k;
+			++s;
+		}
+	}
+	while (s > 0)
+	{
+		--s;
+		probs[s] = 1;
+	}
+	while (l > 0)
+	{
+		--l;
+		probs[l] = 1;
+	}
+}
+
+//rand function as described in the abovementioned paper
+int personal::Vose_smpl(vector<double> probs, vector<int> alias, int size, vector<bool> empty, mt19937 & gen, uniform_real_distribution<> d)
+{
+	while (true)
+	{
+		double u = d(gen)*size;
+		int j = floor(u);
+		//if the random number lies in the correct bin, the right height and 
+		//the virion number is not 0, return j or its alias
+		if ((u - j) <= probs[j])
+		{
+			if (!empty[j]) return j;
+		}
+		else
+		{
+			if (!empty[alias[j]]) return alias[j];
+		}
+	}
 }
 
 vector<long int> personal::sample_int_wo_repl(long int n, unsigned size, mt19937 & gen)
@@ -431,7 +488,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 }
 
-void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, unsigned & seed)
+void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed)
 {
 	ifstream file_in(file);
 	if (!file_in.is_open())
@@ -494,6 +551,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> k_fit;
 	inp >> ad_imm_sys;
 	inp >> fit_change;
+	inp >> fit_l_c;
 	inp >> seed;
 
 	//first look which one of the two versions of SNPs was given, 
@@ -563,6 +621,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	cout << "Burst size fitness multiplicative dependency: " << k_fit << endl;
 	cout << "Adaptive immune system switch set to: " << ad_imm_sys << endl;
 	cout << "Change of fitness over time is: " << fit_change << endl;
+	cout << "Fitness low cap is: " << fit_l_c << endl;
 	cout << "Seed for random number generator: " << seed << endl;
 
 
@@ -763,9 +822,14 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	vector<double> weight(N_STR);
 	long int v_sum = 0;
 	double sum_fi_vi = 0;
+	vector<double> cumsum_v(N_STR + 1);
+	vector<double> weight_prob(N_STR);
 	uniform_real_distribution<> u01(0.0, 1.0);
 	vector<unsigned> to_elim;
 	vector<vector<unsigned> > parallel_elim(omp_get_max_threads());
+	vector<double> probs(N_STR);
+	vector<int> alias(N_STR);
+	vector<bool> empty(N_STR);
 	//make a copy of healthy_cells to run the loop on, if not it will change the
 	//loop variable and analyze less than the total of healthy cells when
 	//--healthy_cells is called.
@@ -785,21 +849,36 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 			eKF[i] = exp(k*fit[i]);
 			weight[i] = V[i]->get_vir();// *fit[i];
 		}
-
 #pragma omp for nowait reduction(+:v_sum)
 		for (int i = 0; i < N_STR; ++i)
 		{
 			v_sum += static_cast<long>(weight[i]);
 		}
-#pragma omp for reduction(+:sum_fi_vi)
+#pragma omp for nowait reduction(+:sum_fi_vi)
 		for (int i = 0; i < N_STR; ++i)
 		{
 			sum_fi_vi += fit[i] * weight[i];
 		}
-
+#pragma omp single
+		{
+			weight_prob = weight;
+		}
+#pragma omp for
+		for (int i = 0; i < N_STR; ++i)
+		{
+			weight_prob[i] /= v_sum;
+			empty[i] = !weight[i];
+		}
 	}
+
+	//copy cumsum into weights vector, to be subsequently modified
+
 	double exp_prob = exp(-k * sum_fi_vi);
-	cout << "I am before healthy cell infection loop with " << hc << " healthy cells" << endl;
+	cout << "a" << endl;
+	Vose_smpl_init(weight_prob, probs, alias, N_STR);
+	cout << "I am before healthy cell infection loop with " << hc << " healthy cells and " << N_STR << " strains." << endl;
+	//BOTTLENECK, MUST FIND WAY OF SPEEDING IT UP
+	//TRY DIVIDING IT IN CHUNCKS
 	for (size_t i = 0; i < hc; ++i)
 	{
 		prob = 1.0 - exp_prob;
@@ -809,19 +888,70 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		{
 			//here a strain index is sampled according to the abundance of the relative virions
 			//frequencies
-			unsigned i_str = smpl_weight(weight, gen, u01);
+			//weights: vector containing the cumulative sum of the frequency in [0,1] of the virions
+			//cumsum_v: vector containing the cumulative sum of the absolute abundance of the virions
+			int i_str;
+			//Vose_smpl_init(weight_prob, probs, alias, N_STR);
+			i_str = Vose_smpl(probs, alias, N_STR, empty, gen, u01);
+			//i_str = smpl_weight(weight, gen, u01);
 			//one virion infects, and a temporarly infected cell is created.
 			//The weight vector is adapted, the number of healthy cells decreases of one,
 			//and the total number of virions v_sum too.
+			//Also change the cumulative sum
+
+			V[i_str]->set_vir(-1);
+			V[i_str]->set_tcell(1);
+			--healthy_cells;
+			--weight[i_str]; //-= fit[i_str];
+			if (!weight[i_str]) empty[i_str] = true;
+			--v_sum;
+			exp_prob *= eKF[i_str];
+			/*weight_prob = weight;
+#pragma omp parallel for
+			for (int i = 0; i < N_STR; ++i)
+			{
+				weight_prob[i] /= v_sum;
+			}*/
+		}
+		if (v_sum == 0)	break;
+	}
+	/*for (size_t i = 0; i < hc; ++i)
+	{
+		prob = 1.0 - exp_prob;
+		outcome = rber(1, prob, gen).back();
+
+		if (outcome)
+		{
+			vector<double> probs(N_STR);
+			vector<int> alias(N_STR);
+			//here a strain index is sampled according to the abundance of the relative virions
+			//frequencies
+			//weights: vector containing the cumulative sum of the frequency in [0,1] of the virions
+			//cumsum_v: vector containing the cumulative sum of the absolute abundance of the virions
+			int i_str;
+			Vose_smpl_init(weight_prob, probs, alias, N_STR);
+			i_str = Vose_smpl(probs, alias, N_STR, gen, u01);
+			//i_str = smpl_weight(weight, gen, u01);
+				//one virion infects, and a temporarly infected cell is created.
+				//The weight vector is adapted, the number of healthy cells decreases of one,
+				//and the total number of virions v_sum too.
+				//Also change the cumulative sum
+
 			V[i_str]->set_vir(-1);
 			V[i_str]->set_tcell(1);
 			--healthy_cells;
 			--weight[i_str]; //-= fit[i_str];
 			--v_sum;
 			exp_prob *= eKF[i_str];
+			weight_prob = weight;
+#pragma omp parallel for
+			for (int i = 0; i < N_STR; ++i)
+			{
+				weight_prob[i] /= v_sum;
+			}
 		}
 		if (v_sum == 0)	break;
-	}
+	}*/
 	//Now evolution can take place on the temporarly infected cells  tcell 
 	//(infected, but not yet sure from which sequence yet)
 	evolve(gen, tmat, SNPs_list, p_mut, t);
@@ -844,6 +974,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//MIGHT USE VECTOR OF RNG FOR NOT TOO MANY NUMBERS
 	//CHANGED GEN TO GENL
 	//Loop over old strains ( not the newest just created ones.)
+#pragma omp parallel for
 	for (int i = 0; i < N_STR; ++i)
 	{
 		mt19937 genl = *(gens[omp_get_thread_num()]);
@@ -851,7 +982,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		//Calculate the burst size with k_fit as fitness dependency factor
 		if (V[i]->get_icell() != 0)
 		{
-			norm_burst = static_cast<int>(rnorm(1, (1 + k_fit * fit[i])*burst*V[i]->get_icell(), fit[i] * burst*V[i]->get_icell() / 3.0, genl).back());
+			norm_burst = static_cast<int>(rnorm(1, k_fit * fit[i] * burst*V[i]->get_icell(), k_fit * fit[i] * burst*V[i]->get_icell() / 3.0, genl).back());
 		}
 		else
 		{
@@ -919,7 +1050,10 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		}
 		else
 		{
-			result = 1;
+#pragma omp critical
+			{
+				result = 1;
+			}
 		}
 	}
 	//strains stored for elimination are here deleted.
@@ -1117,12 +1251,12 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 				{
 					//get a fitness
 					double f = V[str]->get_sequence()->get_fitness() + get_new_fitness(ind, SNPs_list, o_nt, subst, *(gens[omp_get_thread_num()]));
-					if (f < 0.2) f = 0.2;
+					if (f < fit_low_cap) f = fit_low_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
 					sequences * s0 = new sequences(sq, f);
 					strain * st = new strain(s0, n_str, time);
-					#pragma omp critical
+#pragma omp critical
 					{
 						add_line(st);
 					}
@@ -1163,12 +1297,12 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					{
 						f += get_new_fitness(ind[m], SNPs_list, o_nt[m], sq[ind[m]], *(gens[omp_get_thread_num()]));
 					}
-					if (f < 0.02) f = 0.02;
+					if (f < fit_low_cap) f = fit_low_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
 					sequences * s0 = new sequences(sq, f);
 					strain * st = new strain(s0, n_str, time);
-					#pragma omp critical
+#pragma omp critical
 					{
 						add_line(st);
 					}
@@ -1256,10 +1390,11 @@ long int epidemics::next_inf_time(double k, mt19937 & gen)
 }
 
 //samples a host for infection and a strain therein to infect a new host
-void epidemics::new_host_infection(mt19937 & gen)
+void epidemics::new_host_infection(mt19937 & gen, string path)
 {
 	vector<host*>::iterator it = hosts.begin();
-	host * inf = *(it + runif_int(1, 0, (hosts.size() - 1), gen).back());
+	int run = runif_int(1, 0, (hosts.size() - 1), gen).back();
+	host * inf = *(it + run);
 
 	vector<strain*> inf_strains = inf->get_V();
 	//vector<strain*>::iterator it_s = inf_strains.begin();
@@ -1273,11 +1408,12 @@ void epidemics::new_host_infection(mt19937 & gen)
 	//now sample the sequences in the selected host, weighting them
 	//by the number of virions (and the fitness?)
 	discrete_distribution<long int> sampler(probs.begin(), probs.end());
-	unsigned index = sampler(gen);
+	long int index = sampler(gen);
+	cout << "Index of next infected strain is " << index << endl;
 	strain * strain_infecting = inf_strains[index];
 	//now create the new host (must have new everything, a pointer to the
 	//already existing sequences will not suffice!)
-	//A pointer to an old sequence would render the two sequences impossible to
+	//A pointer to an old sequence would make the two sequences impossible to
 	//evolve independently
 	sequences * a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1);
 	//the new host starts with v0 virions, but could actually start with a random number of virions.
@@ -1287,6 +1423,40 @@ void epidemics::new_host_infection(mt19937 & gen)
 	mt19937 gen2(host::total + 1);
 	host * h_new = new host(h0, b, gen2);
 	add_host(h_new);
+
+	//create the stream to print to the file
+	string filename = string(path + "Infection_history");
+	ofstream fout;
+
+	if (!fileExists(filename + ".dat"))
+	{
+		fout.open(filename + ".dat");
+
+		if (!fout.is_open())
+		{
+			cout << "Could not establish connection with file " << filename + ".dat" << endl;
+			return;
+		}
+		//add a nice informative header just the first timestep
+		fout << "Time\tInfecting\tInfected\tStrain" << endl;
+	}
+	else
+	{
+		fout.open(filename + ".dat", ios::app); //append if the file already exists
+
+		if (!fout.is_open())
+		{
+			cout << "Could not establish connection with file " << filename + ".dat" << endl;
+			return;
+		}
+	}
+
+	//print the data
+	fout << time << "\t" << run << "\t" << hosts.size() - 1 << "\t" << index << endl;
+
+
+	//close the connection
+	fout.close();
 }
 
 
@@ -1457,13 +1627,13 @@ void epidemics::change_fitness(mt19937 & gen)
 	{
 		for (unsigned j = 0; j < hosts[i]->get_V().size(); ++j)
 		{
-			if (hosts[i]->get_V()[j]->get_sequence()->get_fitness() > 0.02)
+			if (hosts[i]->get_V()[j]->get_sequence()->get_fitness() > fit_low_cap)
 			{
-				hosts[i]->get_V()[j]->change_fitness(rnorm(1, fit_change, 0.02, gen).back());
+				hosts[i]->get_V()[j]->change_fitness(rnorm(1, fit_change, fit_change / 3, gen).back());
 			}
-			if (hosts[i]->get_V()[j]->get_sequence()->get_fitness() < 0.02)
+			if (hosts[i]->get_V()[j]->get_sequence()->get_fitness() < fit_low_cap)
 			{
-				hosts[i]->get_V()[j]->change_fitness(0.02 - hosts[i]->get_V()[j]->get_sequence()->get_fitness());
+				hosts[i]->get_V()[j]->change_fitness(fit_low_cap - hosts[i]->get_V()[j]->get_sequence()->get_fitness());
 			}
 		}
 	}

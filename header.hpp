@@ -16,7 +16,7 @@ namespace personal
 	extern int v0, h0, hc_renew, burst_size;
 	extern unsigned seed;
 	extern string path_to_tmat, path_output_dyn, path_output_seq, seq0;
-	extern double d_hc, d_ic, d_v, k_inf, S_df, k_btw, k_mut, fit_snp, fit_change, k_fit;
+	extern double d_hc, d_ic, d_v, k_inf, S_df, k_btw, k_mut, fit_snp, fit_change, k_fit, fit_low_cap;
 	extern vector<unsigned> SNPs;
 	extern vector<long int> weight_not_snp;
 	extern vector<double> fit_not_snp;
@@ -165,7 +165,7 @@ namespace personal
 			void set_S(long int diff);
 
 			long int next_inf_time(double k, mt19937 & gen);
-			void new_host_infection(mt19937 & gen);
+			void new_host_infection(mt19937 & gen, string path);
 
 			void add_host(host * h);
 			void delete_host(unsigned index);
@@ -214,8 +214,10 @@ namespace personal
 	long int smpl_weight(vector<double> w, mt19937 & gen, uniform_real_distribution<> d);			
 
 	//sample samples size elements from 0 to (n-1) without replacement.
-	vector<long int> sample(long int n, unsigned size, mt19937 & gen, uniform_real_distribution<> d);
+	void Vose_smpl_init(vector<double> p, vector<double> & probs, vector<int> & alias, int size);
+	int Vose_smpl(vector<double> probs, vector<int> alias, int size, vector<bool> empty, mt19937 & gen, uniform_real_distribution<> d);
 	vector<long int> sample_int_wo_repl(long int n, unsigned size, mt19937 & gen);
+	vector<long int> rejection_sample(long int n, unsigned size, mt19937 & gen);
 
 	//rtp (rate to probability) converts ODE rates into probabilities through
 	//1 - exp(-rate), since it is tuned to 1 day
@@ -228,6 +230,6 @@ namespace personal
 	//read_in (might overload it) reads the transition matrix in
 	//from a file connection
 	void read_in(string file, vector<vector <double> > &trans_mat, bool header);
-	void read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, unsigned & seed);
+	void read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed);
 	bool fileExists(const std::string& file);
 }
