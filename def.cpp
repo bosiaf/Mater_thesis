@@ -529,6 +529,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> path_output_seq;
 	inp >> seq;
 	inp.ignore();
+	inp.ignore();
 	getline(inp, snps, '\n');
 	inp >> v0;
 	inp >> h0;
@@ -542,6 +543,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> kbtw;
 	inp >> kmut;
 	inp >> fit_snp;
+	inp.ignore();
 	inp.ignore();
 	getline(inp, fit_not_snp_str, '\n');
 	getline(inp, weight_not_snp_str, '\n');

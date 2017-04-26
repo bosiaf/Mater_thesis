@@ -33,6 +33,14 @@ int main(int argc, char * argv[])
 	{
 		gens.push_back(new mt19937(omp_get_thread_num()));
 	}
+	if(omp_get_max_threads() > 1)
+	{
+		cout << "Using parallelization OpenMP with " << omp_get_max_threads() << " threads" << endl;
+	}
+	else
+	{
+		cout << "No parallelization with OpenMP" << endl;
+	}
 	//if number of arguments provided is correct
 	if (argc == 2){
 	//read in parameters, in mm^{-3} day{-1}
