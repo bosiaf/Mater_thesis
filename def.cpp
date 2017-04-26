@@ -1052,12 +1052,18 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		}
 		else
 		{
+#if _OPENMP >= 200505
 #pragma omp critical
 			{
 				result = 1;
 			}
+#else
+#pragma omp atomic
+			result = 1;
+#endif
 		}
 	}
+
 	//strains stored for elimination are here deleted.
 	//Go through the array once again and look for the empty strains to eliminate.
 	for (int i = 0; i < parallel_elim.size(); ++i)
