@@ -323,7 +323,7 @@ void personal::Vose_smpl_init(vector<double> p, vector<double> & probs, vector<i
 }
 
 //rand function as described in the abovementioned paper
-int personal::Vose_smpl(vector<double> probs, vector<int> alias, int size, vector<bool> empty, mt19937 & gen, uniform_real_distribution<> d)
+int personal::Vose_smpl(vector<double> probs, vector<int> alias, int size, vector<long> not_empty, mt19937 & gen, uniform_real_distribution<> d)
 {
 	while (true)
 	{
@@ -333,11 +333,11 @@ int personal::Vose_smpl(vector<double> probs, vector<int> alias, int size, vecto
 		//the virion number is not 0, return j or its alias
 		if ((u - j) <= probs[j])
 		{
-			if (!empty[j]) return j;
+			if (not_empty[j]) return j;
 		}
 		else
 		{
-			if (!empty[alias[j]]) return alias[j];
+			if (not_empty[alias[j]]) return alias[j];
 		}
 	}
 }
@@ -821,7 +821,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	vector<double> fit(N_STR);
 	//precomputed exp(k*fit_i)
 	vector<double> eKF(N_STR);
-	vector<double> weight(N_STR);
+	vector<long> weight(N_STR);
 	long int v_sum = 0;
 	double sum_fi_vi = 0;
 	vector<double> cumsum_v(N_STR + 1);
@@ -863,7 +863,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		}
 #pragma omp single
 		{
-			weight_prob = weight;
+			weight_prob = static_cast<double>(weight);
 		}
 #pragma omp for
 		for (int i = 0; i < N_STR; ++i)
@@ -881,6 +881,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	cout << "I am before healthy cell infection loop with " << hc << " healthy cells and " << N_STR << " strains." << endl;
 	//BOTTLENECK, MUST FIND WAY OF SPEEDING IT UP
 	//TRY DIVIDING IT IN CHUNCKS
+	// Set weight as private and initialized (firstprivate?)
 	for (size_t i = 0; i < hc; ++i)
 	{
 		prob = 1.0 - exp_prob;
@@ -894,18 +895,35 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 			//cumsum_v: vector containing the cumulative sum of the absolute abundance of the virions
 			int i_str;
 			//Vose_smpl_init(weight_prob, probs, alias, N_STR);
-			i_str = Vose_smpl(probs, alias, N_STR, empty, gen, u01);
+			i_str = Vose_smpl(probs, alias, N_STR, weight_loc, gen, u01);
 			//i_str = smpl_weight(weight, gen, u01);
 			//one virion infects, and a temporarly infected cell is created.
 			//The weight vector is adapted, the number of healthy cells decreases of one,
 			//and the total number of virions v_sum too.
 			//Also change the cumulative sum
-
+			
+			//let weight be updated globally only if a part reaches 0. 
+			//Do atomic updates: first let the thread that reached 0 update the global 
+			//copy, then let the others update the local copies with the global one.
+			//But is the global copy even necessary?
+			// /*
+			//if (!(--weight_loc[i_str]))
+			-//{
+			//	#pragma omp atomic
+			//	weight[i_str] = 0;
+			//} 
+			//*/
+			//if ( !(--wheight_loc[i_str]) )
+			//{
+			//	for (int i = 0; i < omp_max_num_threads(); ++i)
+			//	{
+			//		if(omp_thread_id() == i) weight_loc[i_str] = 0;
+			//	}
+			//}
 			V[i_str]->set_vir(-1);
 			V[i_str]->set_tcell(1);
 			--healthy_cells;
-			--weight[i_str]; //-= fit[i_str];
-			if (!weight[i_str]) empty[i_str] = true;
+			--weight[i_str];
 			--v_sum;
 			exp_prob *= eKF[i_str];
 			/*weight_prob = weight;

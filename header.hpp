@@ -215,7 +215,7 @@ namespace personal
 
 	//sample samples size elements from 0 to (n-1) without replacement.
 	void Vose_smpl_init(vector<double> p, vector<double> & probs, vector<int> & alias, int size);
-	int Vose_smpl(vector<double> probs, vector<int> alias, int size, vector<bool> empty, mt19937 & gen, uniform_real_distribution<> d);
+	int Vose_smpl(vector<double> probs, vector<int> alias, int size, vector<long> not_empty, mt19937 & gen, uniform_real_distribution<> d);
 	vector<long int> sample_int_wo_repl(long int n, unsigned size, mt19937 & gen);
 	vector<long int> rejection_sample(long int n, unsigned size, mt19937 & gen);
 
