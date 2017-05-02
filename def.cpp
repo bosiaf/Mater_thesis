@@ -882,6 +882,14 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//BOTTLENECK, MUST FIND WAY OF SPEEDING IT UP
 	//TRY DIVIDING IT IN CHUNCKS
 	// Set weight as private and initialized (firstprivate?)
+	//Idea: 
+	//1) Find a sensible size determination for the chunks (fixed, dynamic?)
+	//2) Find a way to update the properties after chunk is done, for example
+	//store the used up virions in a thread-private vector and then sum up all the entries to
+	//get an overall update.
+	//3) Beware of reace conditions!
+	//4) Random number generator
+	//5) empty vector must be synchronized btw all threads
 	for (size_t i = 0; i < hc; ++i)
 	{
 		prob = 1.0 - exp_prob;
@@ -1070,12 +1078,18 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		}
 		else
 		{
+#if _OPENMP >= 200505
 #pragma omp critical
 			{
 				result = 1;
 			}
+#else
+#pragma omp atomic
+			result = 1;
+#endif
 		}
 	}
+
 	//strains stored for elimination are here deleted.
 	//Go through the array once again and look for the empty strains to eliminate.
 	for (int i = 0; i < parallel_elim.size(); ++i)
