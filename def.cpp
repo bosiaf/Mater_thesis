@@ -922,34 +922,68 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 				//Now update the temporary dimensions.
 				++weights_par[i_str][omp_get_thread_num()];				
 			}
+		}
 			//update the quantities
-			for (int i = 0; i < N_STR; ++i)
+		for (int str = 0; str < N_STR; ++str)
+		{
+			long temp_v = 0;
+			//get number of virions of strain "i"
+			for (int j = 0; j < omp_get_max_threads(); ++j)
 			{
-				long temp_v = 0;
-				//get number of virions of strain "i"
-				for (int j = 0; j < omp_get_max_threads(); ++j)
-				{
-					temp_v += weights_par[i][j];
-				}
-				
-				if (temp_v > weight[i]) temp_v = weight[i];
-				V[i]->set_vir(temp_v);
-				V[i]->set_tcell(temp_v);
-				healthy_cells -= temp_v;
-				weight[i] -= temp_v;
-				v_sum -= temp_v;
-				for (int k = 0; k < temp_v; ++k)
-				{
-					exp_prob *= eKF[i]; 
-				}				
+				temp_v += weights_par[str][j];
 			}
-			//if the number of virions reaches 0, break.
-			//since the highest number of virions attainable each chunk is smaller equal
-			//v_sum, this never becomes negative.
-			//temp_v is always <= sum(weight) = sum_v
-			if (v_sum == 0) break;
-			for (int i = 0; i < N_STR; ++i) weight_prob[i] = static_cast<double>(weight[i])/v_sum;
-			Vose_smpl_init(weight_prob, probs, alias, N_STR);			
+			
+			if (temp_v > weight[str]) temp_v = weight[str];
+			V[str]->set_vir(-temp_v);
+			V[str]->set_tcell(temp_v);
+			healthy_cells -= temp_v;
+			weight[str] -= temp_v;
+			v_sum -= temp_v;
+			for (int k = 0; k < temp_v; ++k)
+			{
+				exp_prob *= eKF[str]; 
+			}				
+		}
+		//if the number of virions reaches 0, break.
+		//since the highest number of virions attainable each chunk is smaller equal
+		//v_sum, this never becomes negative.
+		//temp_v is always <= sum(weight) = sum_v
+		if (v_sum == 0) break;
+		for (int i = 0; i < N_STR; ++i) weight_prob[i] = static_cast<double>(weight[i])/v_sum;
+		Vose_smpl_init(weight_prob, probs, alias, N_STR);			
+	}
+	
+	//execute further only if virions are not depleted
+	if (v_sum != 0)
+	{
+		//infect the last cells (from the last chunk to the end)
+		prob = 1.0 - exp_prob;
+		
+		for (int i = nr_chunks*chunk_size; i < hc; ++i)
+		{
+			for (int str = 0; str < N_STR; ++str)
+			{
+				fill(weights_par[str].begin(), weights_par[str].end(), 0);
+			}
+	
+			outcome = rber(1, prob, *gens[omp_get_thread_num()]).back();
+			
+			if(outcome)
+			{
+				int i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
+				++weights_par[i_str][omp_get_thread_num()];
+			}
+		}
+		for(int str = 0; str < N_STR; ++str)
+		{
+			long temp_v = 0;
+			for (int j = 0; j < omp_get_max_threads(); ++j) temp_v += weights_par[str][j];
+			if (temp_v > weight[str]) temp_v = weight[str];
+			V[str]->set_vir(-temp_v);
+			V[str]->set_icell(temp_v);
+			healthy_cells -= temp_v;
+			weight[str] -= temp_v;
+			v_sum -= temp_v;
 		}
 	}
 
