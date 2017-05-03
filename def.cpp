@@ -834,7 +834,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	vector<vector<unsigned> > parallel_elim(omp_get_max_threads());
 	vector<double> probs(N_STR);
 	vector<int> alias(N_STR);
-	vector<bool> empty(N_STR);
+	vector< vector <long> > weights_par(N_STR);
 	//make a copy of healthy_cells to run the loop on, if not it will change the
 	//loop variable and analyze less than the total of healthy cells when
 	//--healthy_cells is called.
@@ -842,41 +842,28 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 
 	//initialize stuff
 	// initialize fit (1 per strain), precaclulated exp(k*fit_i) (1 per strain)
-	// number of virions ( 1 per strain) and total number of virion v_sum, as well as
-	// the sum S_i^{N_STR}(fit_i * n_vir_i)
-	//PARALLEL
-#pragma omp parallel 
+	// number of virions weight ( 1 per strain) and total number of virion v_sum, as well as
+	// the sum S_i^{N_STR}(fit_i * n_vir_i) Weight_prob is the samew as weight but normed at 1
+	//CAN BE MADE PARALLEL if slow
+	for (int i = 0; i < N_STR; ++i)
 	{
-#pragma omp for
-		for (int i = 0; i < N_STR; ++i)
-		{
-			fit[i] = V[i]->get_sequence()->get_fitness();
-			eKF[i] = exp(k*fit[i]);
-			weight[i] = V[i]->get_vir();// *fit[i];
-		}
-#pragma omp for nowait reduction(+:v_sum)
-		for (int i = 0; i < N_STR; ++i)
-		{
-			v_sum += static_cast<long>(weight[i]);
-		}
-#pragma omp for nowait reduction(+:sum_fi_vi)
-		for (int i = 0; i < N_STR; ++i)
-		{
-			sum_fi_vi += fit[i] * weight[i];
-		}
-#pragma omp single
-		{
-			weight_prob = static_cast<double>(weight);
-		}
-#pragma omp for
-		for (int i = 0; i < N_STR; ++i)
-		{
-			weight_prob[i] /= v_sum;
-			empty[i] = !weight[i];
-		}
+		fit[i] = V[i]->get_sequence()->get_fitness();
+		eKF[i] = exp(k*fit[i]);
+		weight[i] = V[i]->get_vir();// *fit[i];
+		v_sum += weight[i];
+		sum_fi_vi += fit[i] * weight[i];
 	}
-
-	//copy cumsum into weights vector, to be subsequently modified
+	for (int i = 0; i < N_STR; ++i)
+	{
+		weight_prob[i] = static_cast<double>(weight[i])/v_sum;
+	}
+	
+	//initialize the parallel weights vector as a 2D vector of [number_threads]*[N_STRAINS]
+	//so that each thread has its own copy to play with. in the end it will be updated globally.
+	for (size_t i = 0; i < N_STR; ++i)
+	{
+		weights_par[i].resize(omp_get_max_threads());
+	}			
 
 	double exp_prob = exp(-k * sum_fi_vi);
 	cout << "a" << endl;
@@ -897,70 +884,131 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 //Chunk size determination
 	int chunk_size = hc / nr_chunks;
 
-	for (int chunk = 0; i < nr_chunks; ++chunk)
+	for (int chunk = 0; chunk < nr_chunks; ++chunk)
 	{
-		//update the probability
-
-		//bernoulli experiment
-
-		//if it is successful
-		//sample the viral strain to be used and update the healthy cells, 
-		//total number of virions and weight_loc
-	}
-	#pragma omp parallel for firstprivate(weight)
-	for (size_t i = 0; i < hc; ++i)
-	{
-		prob = 1.0 - exp_prob;
-		outcome = rber(1, prob, gen).back();
-
-		if (outcome)
+		//reset the temporary weight change vector and the hc count
+		for (int i = 0; i < N_STR; ++i)
 		{
-			//here a strain index is sampled according to the abundance of the relative virions
-			//frequencies
-			//weights: vector containing the cumulative sum of the frequency in [0,1] of the virions
-			//cumsum_v: vector containing the cumulative sum of the absolute abundance of the virions
-			int i_str;
-			//Vose_smpl_init(weight_prob, probs, alias, N_STR);
-			i_str = Vose_smpl(probs, alias, N_STR, weight_loc, gen, u01);
-			//i_str = smpl_weight(weight, gen, u01);
-			//one virion infects, and a temporarly infected cell is created.
-			//The weight vector is adapted, the number of healthy cells decreases of one,
-			//and the total number of virions v_sum too.
-			//Also change the cumulative sum
+			fill(weights_par[i].begin(), weights_par[i].end(), 0);
+		}
+		//update the probability
+		prob = 1.0 - exp_prob;
+
+		for (int i = 0; i < chunk_size; ++i)
+		{
+			//bernoulli experiment
+			outcome = rber(1, prob, *gens[omp_get_thread_num()]).back();
+			//if it is successful
+			if(outcome)
+			{
+				//here a strain index is sampled according to the abundance of the relative
+				//virions frequencies. This is an approximate algorithm: weights are not changed
+				//within the chunk to allow seamless parallelization. This is not a big deal,though.
+				//weight: vector containing the number of virions at the beginning of the chunk.
+				//probs, alias: used for Vose sampler, no need to know that: read the source code
+				//of the sampler.
+				//gens: vector containing many mt19937 RNG
+				//u01: uniform 0-1 distribution
+				//weights_par: 2D vector of dimension [#threads]*[#strains] to store the number of
+				//virions that infected for updating the probabilities after chunk end.
+				//
+				//A virion infects, and a temporarly infected cell is created
+				//The weight vector is NOT yet adaptes, to allow easier parallelization
+				//at cost of some accuracy.
+				//
+				int i_str;
+				i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
 			
-			//let weight be updated globally only if a part reaches 0. 
-			//Do atomic updates: first let the thread that reached 0 update the global 
-			//copy, then let the others update the local copies with the global one.
-			//But is the global copy even necessary?
-			// /*
-			//if (!(--weight_loc[i_str]))
-			//{
-			//	#pragma omp atomic
-			//	weight[i_str] = 0;
-			//} 
-			//*/
-			//if ( !(--wheight_loc[i_str]) )
-			//{
-			//	for (int i = 0; i < omp_max_num_threads(); ++i)
-			//	{
-			//		if(omp_thread_id() == i) weight_loc[i_str] = 0;
-			//	}
-			//}
-			V[i_str]->set_vir(-1);
-			V[i_str]->set_tcell(1);
-			--healthy_cells;
-			--weight[i_str];
-			--v_sum;
-			exp_prob *= eKF[i_str];
-			/*weight_prob = weight;
-#pragma omp parallel for
+				//Now update the temporary dimensions.
+				++weights_par[i_str][omp_get_thread_num()];				
+			}
+			//update the quantities
 			for (int i = 0; i < N_STR; ++i)
 			{
-				weight_prob[i] /= v_sum;
-			}*/
+				long temp_v = 0;
+				//get number of virions of strain "i"
+				for (int j = 0; j < omp_get_max_threads(); ++j)
+				{
+					temp_v += weights_par[i][j];
+				}
+				
+				if (temp_v > weight[i]) temp_v = weight[i];
+				V[i]->set_vir(temp_v);
+				V[i]->set_tcell(temp_v);
+				healthy_cells -= temp_v;
+				weight[i] -= temp_v;
+				v_sum -= temp_v;
+				for (int k = 0; k < temp_v; ++k)
+				{
+					exp_prob *= eKF[i]; 
+				}				
+			}
+			//if the number of virions reaches 0, break.
+			//since the highest number of virions attainable each chunk is smaller equal
+			//v_sum, this never becomes negative.
+			//temp_v is always <= sum(weight) = sum_v
+			if (v_sum == 0) break;
+			for (int i = 0; i < N_STR; ++i) weight_prob[i] = static_cast<double>(weight[i])/v_sum;
+			Vose_smpl_init(weight_prob, probs, alias, N_STR);			
 		}
-		if (v_sum == 0)	break;
 	}
+
+/*
+*	#pragma omp parallel for firstprivate(weight)
+*	for (size_t i = 0; i < hc; ++i)
+*	{
+*		prob = 1.0 - exp_prob;
+*		outcome = rber(1, prob, gen).back();
+*
+*		if (outcome)
+*		{
+*			//here a strain index is sampled according to the abundance of the relative virions
+*			//frequencies
+*			//weights: vector containing the cumulative sum of the frequency in [0,1] of the virions
+*			//cumsum_v: vector containing the cumulative sum of the absolute abundance of the virions
+*			int i_str;
+*			//Vose_smpl_init(weight_prob, probs, alias, N_STR);
+*			i_str = Vose_smpl(probs, alias, N_STR, weight_loc, gen, u01);
+*			//i_str = smpl_weight(weight, gen, u01);
+*			//one virion infects, and a temporarly infected cell is created.
+*			//The weight vector is adapted, the number of healthy cells decreases of one,
+*			//and the total number of virions v_sum too.
+*			//Also change the cumulative sum
+*			
+*			//let weight be updated globally only if a part reaches 0. 
+*			//Do atomic updates: first let the thread that reached 0 update the global 
+*			//copy, then let the others update the local copies with the global one.
+*			//But is the global copy even necessary?
+*			//
+*			//if (!(--weight_loc[i_str]))
+*			//{
+*			//	#pragma omp atomic
+*			//	weight[i_str] = 0;
+*			//} 
+*			//
+*			//if ( !(--wheight_loc[i_str]) )
+*			//{
+*			//	for (int i = 0; i < omp_max_num_threads(); ++i)
+*			//	{
+*			//		if(omp_thread_id() == i) weight_loc[i_str] = 0;
+*			//	}
+*			//}
+*			V[i_str]->set_vir(-1);
+*			V[i_str]->set_tcell(1);
+*			--healthy_cells;
+*			--weight[i_str];
+*			--v_sum;
+*			exp_prob *= eKF[i_str];
+*			*weight_prob = weight;
+* #pragma omp parallel for
+*			for (int i = 0; i < N_STR; ++i)
+*			{
+*				weight_prob[i] /= v_sum;
+*			}
+*		}
+*		if (v_sum == 0)	break;
+*	}
+*/
 	/*for (size_t i = 0; i < hc; ++i)
 	{
 		prob = 1.0 - exp_prob;
@@ -1008,7 +1056,6 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//
 	//Get total number of cells tot_c
 	long int tot_c = hc;
-#pragma omp parallel for reduction(+:tot_c) if(N_STR>24)
 	for (int i = 0; i < V.size(); ++i)
 	{
 		tot_c += V[i]->get_icell();
@@ -1541,7 +1588,7 @@ void epidemics::print_epidemics()
 	cout << "\n****************************************\n" << endl;
 	cout << "Epidemics has gone on for " << time << " days" << endl;
 	vector<host*>::iterator it_h = hosts.begin();
-	for (it_h; it_h != hosts.end(); ++it_h)
+	for (; it_h != hosts.end(); ++it_h)
 	{
 		cout << "Host number " << (*it_h)->get_ID() << endl;
 		(*it_h)->print();
@@ -1552,7 +1599,7 @@ void epidemics::print_epidemics(string path)
 {
 
 	vector<host*>::iterator it_h = hosts.begin();
-	for (it_h; it_h != hosts.end(); ++it_h)
+	for (; it_h != hosts.end(); ++it_h)
 	{
 		//instantiate a stream for the output of V and healthy cells
 		string filename = string(path + "host_" + to_string((*it_h)->get_ID()));
@@ -1620,7 +1667,7 @@ void epidemics::print_epidemics(string path)
 void epidemics::print_seq_epidemics()
 {
 	vector<host*>::iterator it_h = hosts.begin();
-	for (it_h; it_h != hosts.end(); ++it_h)
+	for (; it_h != hosts.end(); ++it_h)
 	{
 		cout << "Host number " << (*it_h)->get_ID() << endl;
 		(*it_h)->print_seq();
@@ -1630,7 +1677,7 @@ void epidemics::print_seq_epidemics()
 void epidemics::print_seq_epidemics(string path)
 {
 	vector<host*>::iterator it_h = hosts.begin();
-	for (it_h; it_h != hosts.end(); ++it_h)
+	for (; it_h != hosts.end(); ++it_h)
 	{
 		string filename = path + "host_" + to_string((*it_h)->get_ID()) + "_seq.dat";
 		ofstream fout;
