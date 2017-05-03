@@ -488,7 +488,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 }
 
-void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed)
+void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks)
 {
 	ifstream file_in(file);
 	if (!file_in.is_open())
@@ -555,6 +555,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> fit_change;
 	inp >> fit_l_c;
 	inp >> seed;
+	inp >> nr_chunks;
 
 	//first look which one of the two versions of SNPs was given, 
 	//checking if the dash is there.
@@ -625,7 +626,9 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	cout << "Change of fitness over time is: " << fit_change << endl;
 	cout << "Fitness low cap is: " << fit_l_c << endl;
 	cout << "Seed for random number generator: " << seed << endl;
+	cout << "Number of chunks in the parallel infection region: " << nr_chunks << endl;
 
+	cout << "************************************************************" << endl;
 
 }
 
@@ -890,6 +893,21 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//3) Beware of reace conditions!
 	//4) Random number generator
 	//5) empty vector must be synchronized btw all threads
+	
+//Chunk size determination
+	int chunk_size = hc / nr_chunks;
+
+	for (int chunk = 0; i < nr_chunks; ++chunk)
+	{
+		//update the probability
+
+		//bernoulli experiment
+
+		//if it is successful
+		//sample the viral strain to be used and update the healthy cells, 
+		//total number of virions and weight_loc
+	}
+	#pragma omp parallel for firstprivate(weight)
 	for (size_t i = 0; i < hc; ++i)
 	{
 		prob = 1.0 - exp_prob;
@@ -916,7 +934,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 			//But is the global copy even necessary?
 			// /*
 			//if (!(--weight_loc[i_str]))
-			-//{
+			//{
 			//	#pragma omp atomic
 			//	weight[i_str] = 0;
 			//} 
