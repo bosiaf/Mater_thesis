@@ -29,9 +29,11 @@ unsigned host::total = 0;
 
 int main(int argc, char * argv[])
 {
+
+	uniform_int_distribution<> u(1,100000);
 	for (int i = 0; i < omp_get_max_threads(); ++i)
 	{
-		gens.push_back(new mt19937(omp_get_thread_num()));
+		gens.push_back(new mt19937(u(gen) * i));
 	}
 	if(omp_get_max_threads() > 1)
 	{

@@ -228,7 +228,6 @@ long int personal::smpl_weight(vector<long int> w, mt19937 & gen, uniform_real_d
 	double r = d(gen);
 	w_csum[0] = w[0];
 	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i - 1] + w[i];
-#pragma omp parallel for
 	for (int i = 0; i < w_sz; ++i)
 	{
 		w_csum[i] /= w_csum.back();
@@ -252,7 +251,6 @@ long int personal::smpl_weight(vector<double> w, mt19937 & gen, uniform_real_dis
 
 	for (unsigned i = 1; i < w_sz; ++i)	w_csum[i] = w_csum[i - 1] + w[i];
 	//vectorize this
-#pragma omp parallel for
 	for (int i = 0; i < w_sz; ++i)
 	{
 		w_csum[i] /= w_csum.back();
@@ -818,7 +816,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 {
 	//number of strains in host
 	unsigned N_STR = V.size();
-	bool outcome;
+	//bool outcome;
 	bool result = 0;
 	double prob;
 	vector<double> fit(N_STR);
@@ -834,7 +832,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	vector<vector<unsigned> > parallel_elim(omp_get_max_threads());
 	vector<double> probs(N_STR);
 	vector<int> alias(N_STR);
-	vector< vector <long> > weights_par(N_STR);
+	vector< vector <long> > weights_par(omp_get_max_threads());
 	//make a copy of healthy_cells to run the loop on, if not it will change the
 	//loop variable and analyze less than the total of healthy cells when
 	//--healthy_cells is called.
@@ -860,9 +858,10 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	
 	//initialize the parallel weights vector as a 2D vector of [number_threads]*[N_STRAINS]
 	//so that each thread has its own copy to play with. in the end it will be updated globally.
-	for (size_t i = 0; i < N_STR; ++i)
+	//wêights_par causes false sharing
+	for (size_t i = 0; i < omp_get_max_threads(); ++i)
 	{
-		weights_par[i].resize(omp_get_max_threads());
+		weights_par[i].resize(N_STR);
 	}			
 
 	double exp_prob = exp(-k * sum_fi_vi);
@@ -887,17 +886,18 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	for (int chunk = 0; chunk < nr_chunks; ++chunk)
 	{
 		//reset the temporary weight change vector and the hc count
-		for (int i = 0; i < N_STR; ++i)
+		for (int i = 0; i < omp_get_max_threads(); ++i)
 		{
 			fill(weights_par[i].begin(), weights_par[i].end(), 0);
 		}
 		//update the probability
 		prob = 1.0 - exp_prob;
-
+		#pragma omp parallel for
 		for (int i = 0; i < chunk_size; ++i)
 		{
+			
 			//bernoulli experiment
-			outcome = rber(1, prob, *gens[omp_get_thread_num()]).back();
+			bool outcome = rber(1, prob, *(gens[omp_get_thread_num()])).back();
 			//if it is successful
 			if(outcome)
 			{
@@ -918,21 +918,20 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 				//
 				int i_str;
 				i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
-			
 				//Now update the temporary dimensions.
-				++weights_par[i_str][omp_get_thread_num()];				
+				++weights_par[omp_get_thread_num()][i_str];	
 			}
 		}
 			//update the quantities
 		for (int str = 0; str < N_STR; ++str)
 		{
 			long temp_v = 0;
-			//get number of virions of strain "i"
+			//get number of virions of strain "str"
 			for (int j = 0; j < omp_get_max_threads(); ++j)
 			{
-				temp_v += weights_par[str][j];
+				temp_v += weights_par[j][str];
 			}
-			
+
 			if (temp_v > weight[str]) temp_v = weight[str];
 			V[str]->set_vir(-temp_v);
 			V[str]->set_tcell(temp_v);
@@ -959,25 +958,25 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		//infect the last cells (from the last chunk to the end)
 		prob = 1.0 - exp_prob;
 		
+		for (int i = 0; i < omp_get_max_threads(); ++i)
+		{
+			fill(weights_par[i].begin(), weights_par[i].end(), 0);
+		}
+		#pragma omp parallel for
 		for (int i = nr_chunks*chunk_size; i < hc; ++i)
 		{
-			for (int str = 0; str < N_STR; ++str)
-			{
-				fill(weights_par[str].begin(), weights_par[str].end(), 0);
-			}
-	
-			outcome = rber(1, prob, *gens[omp_get_thread_num()]).back();
+			bool outcome = rber(1, prob, *gens[omp_get_thread_num()]).back();
 			
 			if(outcome)
 			{
 				int i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
-				++weights_par[i_str][omp_get_thread_num()];
+				++weights_par[omp_get_thread_num()][i_str];
 			}
 		}
 		for(int str = 0; str < N_STR; ++str)
 		{
 			long temp_v = 0;
-			for (int j = 0; j < omp_get_max_threads(); ++j) temp_v += weights_par[str][j];
+			for (int j = 0; j < omp_get_max_threads(); ++j) temp_v += weights_par[j][str];
 			if (temp_v > weight[str]) temp_v = weight[str];
 			V[str]->set_vir(-temp_v);
 			V[str]->set_icell(temp_v);
@@ -1389,10 +1388,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					new_str();
 					sequences * s0 = new sequences(sq, f);
 					strain * st = new strain(s0, n_str, time);
-#pragma omp critical
-					{
-						add_line(st);
-					}
+					add_line(st);
 				}
 			}
 			else if (n_mut > 1)
@@ -1435,10 +1431,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					new_str();
 					sequences * s0 = new sequences(sq, f);
 					strain * st = new strain(s0, n_str, time);
-#pragma omp critical
-					{
-						add_line(st);
-					}
+					add_line(st);
 				}
 			}
 		}
