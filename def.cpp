@@ -876,7 +876,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//2) Find a way to update the properties after chunk is done, for example
 	//store the used up virions in a thread-private vector and then sum up all the entries to
 	//get an overall update.
-	//3) Beware of reace conditions!
+	//3) Beware of race conditions!
 	//4) Random number generator
 	//5) empty vector must be synchronized btw all threads
 	
@@ -892,35 +892,31 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		}
 		//update the probability
 		prob = 1.0 - exp_prob;
+
+		int nvir = rbinom(1, chunk_size, prob, gen).back();
+		int i_str;
+
 		#pragma omp parallel for
-		for (int i = 0; i < chunk_size; ++i)
+		for (int i = 0; i < nvir; ++i)
 		{
-			
-			//bernoulli experiment
-			bool outcome = rber(1, prob, *(gens[omp_get_thread_num()])).back();
-			//if it is successful
-			if(outcome)
-			{
-				//here a strain index is sampled according to the abundance of the relative
-				//virions frequencies. This is an approximate algorithm: weights are not changed
-				//within the chunk to allow seamless parallelization. This is not a big deal,though.
-				//weight: vector containing the number of virions at the beginning of the chunk.
-				//probs, alias: used for Vose sampler, no need to know that: read the source code
-				//of the sampler.
-				//gens: vector containing many mt19937 RNG
-				//u01: uniform 0-1 distribution
-				//weights_par: 2D vector of dimension [#threads]*[#strains] to store the number of
-				//virions that infected for updating the probabilities after chunk end.
-				//
-				//A virion infects, and a temporarly infected cell is created
-				//The weight vector is NOT yet adaptes, to allow easier parallelization
-				//at cost of some accuracy.
-				//
-				int i_str;
-				i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
-				//Now update the temporary dimensions.
-				++weights_par[omp_get_thread_num()][i_str];	
-			}
+			//here a strain index is sampled according to the abundance of the relative
+			//virions frequencies. This is an approximate algorithm: weights are not changed
+			//within the chunk to allow seamless parallelization. This is not a big deal,though.
+			//weight: vector containing the number of virions at the beginning of the chunk.
+			//probs, alias: used for Vose sampler, no need to know that: read the source code
+			//of the sampler.
+			//gens: vector containing many mt19937 RNG
+			//u01: uniform 0-1 distribution
+			//weights_par: 2D vector of dimension [#threads]*[#strains] to store the number of
+			//virions that infected for updating the probabilities after chunk end.
+			//
+			//A virion infects, and a temporarly infected cell is created
+			//The weight vector is NOT yet adaptes, to allow easier parallelization
+			//at cost of some accuracy.
+			//
+			int i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
+			//Now update the temporary dimensions.
+			++weights_par[omp_get_thread_num()][i_str];	
 		}
 			//update the quantities
 		for (int str = 0; str < N_STR; ++str)
@@ -948,8 +944,8 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		//v_sum, this never becomes negative.
 		//temp_v is always <= sum(weight) = sum_v
 		if (v_sum == 0) break;
-		for (int i = 0; i < N_STR; ++i) weight_prob[i] = static_cast<double>(weight[i])/v_sum;
-		Vose_smpl_init(weight_prob, probs, alias, N_STR);			
+		//for (int i = 0; i < N_STR; ++i) weight_prob[i] = static_cast<double>(weight[i])/v_sum;
+		//Vose_smpl_init(weight_prob, probs, alias, N_STR);			
 	}
 	
 	//execute further only if virions are not depleted
@@ -958,20 +954,18 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		//infect the last cells (from the last chunk to the end)
 		prob = 1.0 - exp_prob;
 		
+		int n_vir = rbinom(1, hc - (nr_chunks * chunk_size), prob, gen).back();
+
 		for (int i = 0; i < omp_get_max_threads(); ++i)
 		{
 			fill(weights_par[i].begin(), weights_par[i].end(), 0);
 		}
+		int i_str;
 		#pragma omp parallel for
 		for (int i = nr_chunks*chunk_size; i < hc; ++i)
 		{
-			bool outcome = rber(1, prob, *gens[omp_get_thread_num()]).back();
-			
-			if(outcome)
-			{
 				int i_str = Vose_smpl(probs, alias, N_STR, weight, *gens[omp_get_thread_num()], u01);
 				++weights_par[omp_get_thread_num()][i_str];
-			}
 		}
 		for(int str = 0; str < N_STR; ++str)
 		{
@@ -1335,7 +1329,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 	//If it is not a SNP, fitness can either stay the same or decrease, if it is a SNP, increase
 	//fitness through escape in a first approximation (better models will follow)
 	//use constant variable to prevent down scaling of loop
-	long N_STR = V.size();
+	int N_STR = V.size();
 	for (int str = 0; str < N_STR; ++str)
 	{
 		//using this variable prevents down-scaling of for loop
@@ -1346,7 +1340,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 			//copy sequence in order not to change the strain sequence (would affect each virion
 			//in the same strain)
 			string sq = V[str]->get_sequence()->get_sequence();
-			unsigned n_mut = rbinom(1, s_sz, p_mut, *(gens[omp_get_thread_num()])).back();
+			int n_mut = rbinom(1, s_sz, p_mut, *(gens[omp_get_thread_num()])).back();
 			//if there are no mutations...
 			if (n_mut == 0)
 			{
@@ -1366,7 +1360,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 				sq[ind] = subst;
 				//now look for the sequence in the already available sequences
 				bool found = false;
-				for (unsigned i = 0; i < V.size(); ++i)
+				for (int i = 0; i < V.size(); ++i)
 				{
 					//How to do string comparison? Maybe hash table would be the best
 					//if not use Rabin-Karp. But a lookup-table would be nice
