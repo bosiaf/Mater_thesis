@@ -70,7 +70,11 @@ int main(int argc, char * argv[])
 		cout << "usage: ./progr path/to/parameters.dat" << endl;
 		return 1;
 	}
-
+	
+	if (nr_chunks < 1)
+	{
+		cout << "Number of chunks to reinitialize sampler cannot be smaller than 1!!" << endl;
+	}
 	//Discrete time algorithm
 	
 	//set the initial strain values
@@ -80,7 +84,7 @@ int main(int argc, char * argv[])
 	strain * st = new strain(s0, v0, 0, 0, 1, 0);
 
 	//initialize a host specific RNG
-	mt19937 g1(host::total);
+	mt19937 g1(u(gen) * (host::total));
 
 	//instantiate a class instance with 1000 healthy cells, the previously defined strain
 	//and the local RNG
