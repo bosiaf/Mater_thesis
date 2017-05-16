@@ -486,7 +486,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 }
 
-void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks)
+void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel)
 {
 	ifstream file_in(file);
 	if (!file_in.is_open())
@@ -554,6 +554,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> fit_l_c;
 	inp >> seed;
 	inp >> nr_chunks;
+	inp >> parallel;
 
 	//first look which one of the two versions of SNPs was given, 
 	//checking if the dash is there.
@@ -624,7 +625,8 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	cout << "Change of fitness over time is: " << fit_change << endl;
 	cout << "Fitness low cap is: " << fit_l_c << endl;
 	cout << "Seed for random number generator: " << seed << endl;
-	cout << "Number of chunks in the parallel infection region: " << nr_chunks << endl;
+	cout << "Number of Vose sampler updates in wi-host infection: " << nr_chunks << endl;
+	cout << "Using OpenMP parallel computing to treat hosts:" << parallel << endl; 
 
 	cout << "************************************************************" << endl;
 
