@@ -820,6 +820,7 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	unsigned N_STR = V.size();
 	//bool outcome;
 	bool result = 0;
+	bool outcome;
 	double prob;
 	vector<double> fit(N_STR);
 	//precomputed exp(k*fit_i)
@@ -928,12 +929,11 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		{
 			if (i % (hc / nr_chunks) == 0)
 			{
-				
-				weight_prob = weight;
 				for (int i = 0; i < N_STR; ++i)
 				{
-					weight_prob[i] /= v_sum;
+					weight_prob[i] = static_cast<double>(weight[i])/v_sum;
 				}
+
 				Vose_smpl_init(weight_prob, probs, alias, N_STR);
 			}
 		}
@@ -999,12 +999,11 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	//Loop over old strains ( not the newest just created ones.)
 	for (int i = 0; i < N_STR; ++i)
 	{
-		mt19937 genl = *(gens[omp_get_thread_num()]);
 		int norm_burst = 0;
 		//Calculate the burst size with k_fit as fitness dependency factor
 		if (V[i]->get_icell() != 0)
 		{
-			norm_burst = static_cast<int>(rnorm(1, k_fit * fit[i] * burst*V[i]->get_icell(), k_fit * fit[i] * burst*V[i]->get_icell() / 3.0, genl).back());
+			norm_burst = static_cast<int>(rnorm(1, k_fit * fit[i] * burst*V[i]->get_icell(), k_fit * fit[i] * burst*V[i]->get_icell() / 3.0, gen).back());
 		}
 		else
 		{
@@ -1018,22 +1017,22 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence / fit[i]), genl).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence / fit[i]), gen).back());
 			}
 			else
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc / fit[i]), genl).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc / fit[i]), gen).back());
 			}
 		}
 		else
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence), genl).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc*immunocompetence), gen).back());
 			}
 			else
 			{
-				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc), genl).back());
+				V[i]->set_icell(-rbinom(1, V[i]->get_icell(), rtp(d_infc), gen).back());
 			}
 		}
 
@@ -1043,22 +1042,22 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence / fit[i]), genl).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence / fit[i]), gen).back());
 			}
 			else
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir / fit[i]), genl).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir / fit[i]), gen).back());
 			}
 		}
 		else
 		{
 			if (ad_imm_sys)
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence), genl).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir*immunocompetence), gen).back());
 			}
 			else
 			{
-				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir), genl).back());
+				V[i]->set_vir(-rbinom(1, V[i]->get_vir(), rtp(d_vir), gen).back());
 			}
 		}
 		//burst virions
@@ -1067,35 +1066,15 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 		//eliminate the strain.
 		if (!(V[i]->get_vir() && V[i]->get_icell()))
 		{
-			//to_elim.push_back(i);
-			parallel_elim[omp_get_thread_num()].push_back(i);
+			to_elim.push_back(i);
 		}
 		else
 		{
-#if _OPENMP >= 200505
-#pragma omp critical
-			{
-				result = 1;
-			}
-#else
-#pragma omp atomic
 			result = 1;
-#endif
 		}
 	}
 
 	//strains stored for elimination are here deleted.
-	//Go through the array once again and look for the empty strains to eliminate.
-	for (int i = 0; i < parallel_elim.size(); ++i)
-	{
-		for (int j = 0; j < parallel_elim[i].size(); ++j)
-		{
-			to_elim.push_back(parallel_elim[i][j]);
-		}
-	}
-
-	sort(to_elim.begin(), to_elim.end());
-
 	for (unsigned i = to_elim.size(); i > 0; --i)
 	{
 		delete_strain(to_elim[i - 1]);
@@ -1414,6 +1393,7 @@ long int epidemics::next_inf_time(double k, mt19937 & gen)
 //samples a host for infection and a strain therein to infect a new host
 void epidemics::new_host_infection(mt19937 & gen, string path)
 {
+	uniform_int_distribution<> u(1,100000);
 	vector<host*>::iterator it = hosts.begin();
 	int run = runif_int(1, 0, (hosts.size() - 1), gen).back();
 	host * inf = *(it + run);

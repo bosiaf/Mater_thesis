@@ -21,20 +21,28 @@ vector<long int> personal::weight_not_snp;
 vector<double> personal::fit_not_snp;
 bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys, personal::parallel;
 mt19937 personal::gen(42);
+mt19937 * genp;
 vector<mt19937*> personal::gens;
 
 unsigned host::total = 0;
 
-
+#pragma omp threadprivate(genp)
 
 int main(int argc, char * argv[])
 {
 
 	uniform_int_distribution<> u(1,100000);
+	
+#pragma omp parallel
+	{
+		genp = new mt19937(u(gen) * omp_get_thread_num());
+	}
+	
 	for (int i = 0; i < omp_get_max_threads(); ++i)
 	{
 		gens.push_back(new mt19937(u(gen) * i));
 	}
+	
 	if(omp_get_max_threads() > 1)
 	{
 		cout << "Using parallelization OpenMP with " << omp_get_max_threads() << " threads" << endl;
@@ -120,19 +128,20 @@ int main(int argc, char * argv[])
 		//3) Wrap parallelization in a conditional clause using the "parallel" variable
 		//4) Look out for barriers! At the end there must be one.
 		//5) Test, test, test.
-		for(unsigned i = 0 ; i < e.get_hosts().size(); ++i)
+		#pragma omp parallel for
+		for(int i = 0 ; i < e.get_hosts().size(); ++i)
 		{
 			bool is_host_full;
 			//check if virions numbers are correct:
 			//new healthy cells are created
-			e.get_hosts()[i]->set_hc(floor(rnorm(1,hc_renew + 0.5,hc_renew/5.0, gen).back()));
+			e.get_hosts()[i]->set_hc(floor(rnorm(1,hc_renew + 0.5,hc_renew/5.0, *genp).back()));
 
 			//infection occurs and death takes its toll
 			//with virions and infected cells (strain specific)
-			is_host_full = e.get_hosts()[i]->wi_host_inf_death(k_inf, d_ic, d_v, burst_size, gen, tmat, SNPs, p_mut, e.get_time());
+			is_host_full = e.get_hosts()[i]->wi_host_inf_death(k_inf, d_ic, d_v, burst_size, *genp, tmat, SNPs, p_mut, e.get_time());
 			//death comes to take everybody:
 			//also target healthy cells
-			e.get_hosts()[i]->set_hc(-rbinom(1, e.get_hosts()[i]->get_hc(), rtp(d_hc), gen).back());
+			e.get_hosts()[i]->set_hc(-rbinom(1, e.get_hosts()[i]->get_hc(), rtp(d_hc), *genp).back());
 			//In the beginning death of healthy cells happened prior to infection, now it is opposite 
 			//for no particular reason.
 			//is_host_full = e.get_hosts()[i]->wi_host_inf_death(k_inf, d_ic, d_v, burst_size, gen, tmat);
