@@ -1,6 +1,6 @@
 rm (list = ls())
 
-p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
+p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170517/"
 
 for (e in 1:4) plot.ViralLoad(path = p, epidemics = e)
 
@@ -14,12 +14,14 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
   {
     if (.Platform$OS.type == "windows")
     {
+      path_to_epi <- paste(path, "Epidemics_", epidemics, "/dyn/", sep = "")
       inputfile <- paste(path, "Epidemics_", epidemics, "/dyn/host_", host, "_healthy_cells.dat", sep = "")
     }else
     {
+      path_to_epi <- paste(path, "Epidemics_", epidemics, "/dyn/", sep = "")
       inputfile <- paste(path, "Epidemics_", epidemics, "/dyn/host_", host, "_healthy_cells.dat", sep = "")
     }
-    
+    if ( !(paste("host_", host, "_healthy_cells.dat", sep = "") %in% list.files(path_to_epi)) ) next
     fin <- read.table(inputfile, header = T, sep = "\t")
     
     
