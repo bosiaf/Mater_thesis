@@ -128,7 +128,7 @@ int main(int argc, char * argv[])
 		//3) Wrap parallelization in a conditional clause using the "parallel" variable
 		//4) Look out for barriers! At the end there must be one.
 		//5) Test, test, test.
-		#pragma omp parallel for
+		#pragma omp parallel for firstprivate(v0,h0,hc_renew,burst_size,nr_chunks,d_hc,d_ic,d_v,k_inf,S_df,k_btw,k_mut,fit_snp,fit_change,k_fit,fit_low_cap,SNPs,weight_not_snp,fit_not_snp,dic_fit_dep,dv_fit_dep,inf_fit_dep,ad_imm_sys)
 		for(int i = 0 ; i < e.get_hosts().size(); ++i)
 		{
 			bool is_host_full;
