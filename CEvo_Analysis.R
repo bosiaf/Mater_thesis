@@ -1,5 +1,9 @@
 rm (list = ls())
 
+p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
+
+for (e in 1:4) plot.ViralLoad(path = p, epidemics = e)
+
 plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
                            , epidemics = 1, format = F){
   
