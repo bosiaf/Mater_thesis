@@ -20,7 +20,7 @@ vector<unsigned> personal::SNPs;
 vector<long int> personal::weight_not_snp;
 vector<double> personal::fit_not_snp;
 bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys, personal::parallel;
-mt19937 personal::gen(42);
+mt19937 personal::geng(42);
 mt19937 * genp;
 vector<mt19937*> personal::gens;
 
@@ -35,12 +35,12 @@ int main(int argc, char * argv[])
 	
 #pragma omp parallel
 	{
-		genp = new mt19937(u(gen) * omp_get_thread_num());
+		genp = new mt19937(u(geng) * omp_get_thread_num());
 	}
 	
 	for (int i = 0; i < omp_get_max_threads(); ++i)
 	{
-		gens.push_back(new mt19937(u(gen) * i));
+		gens.push_back(new mt19937(u(geng) * i));
 	}
 	
 	if(omp_get_max_threads() > 1)
@@ -64,7 +64,7 @@ int main(int argc, char * argv[])
 	//get probability from rate
 	double p_mut = rtp(k_mut);
 	//reseed with given seed
-	gen.seed(seed);
+	geng.seed(seed);
 
 	vector<vector<double> > tmat;
 
@@ -94,7 +94,7 @@ int main(int argc, char * argv[])
 	strain * st = new strain(s0, v0, 0, 0, 1, 0);
 
 	//initialize a host specific RNG
-	mt19937 g1(u(gen) * (host::total));
+	mt19937 g1(u(geng) * (host::total));
 
 	//instantiate a class instance with 1000 healthy cells, the previously defined strain
 	//and the local RNG
@@ -103,7 +103,7 @@ int main(int argc, char * argv[])
 	//initialize epidemics with first host and number (constant) of uninfected population
 	epidemics e = epidemics(h1, S_df);
 	//initialize a first host infection time
-	long int t_next_inf = e.next_inf_time(k_btw, gen);
+	long int t_next_inf = e.next_inf_time(k_btw, geng);
 	cout << "Next infection time is " << t_next_inf << endl;
 
 	//begin the epidemics, set a checker for premature end of epidemics
@@ -114,9 +114,9 @@ int main(int argc, char * argv[])
 		while (t_next_inf == 0)
 		{
 			cout << "New host infected at time " << e.get_time() << "!" << endl;
-			e.new_host_infection(gen, path_output_dyn);
+			e.new_host_infection(geng, path_output_dyn);
 			cout << "Virion number of new strain is " << e.get_hosts().back()->get_V().back()->get_vir() << endl;
-			t_next_inf = e.next_inf_time(k_btw, gen);
+			t_next_inf = e.next_inf_time(k_btw, geng);
 			cout << "New infection time is " << t_next_inf << endl;
 		}
 		//vector to contain indexes of empty hosts (that will be eliminated)
@@ -175,7 +175,7 @@ int main(int argc, char * argv[])
 		--t_next_inf;
 
 		//decrease the fitness of the strains due to immune system
-		e.change_fitness(gen);
+		e.change_fitness(geng);
 
 		//see if the epidemics is over (everybody healed)
 		//and, if so, end the simulation.
@@ -196,5 +196,10 @@ int main(int argc, char * argv[])
 		}
 		e.delete_host(i - 1);
 	}
+	#pragma omp parallel
+	{
+		delete genp;
+	}
+
 	return 0;
 }
