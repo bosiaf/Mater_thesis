@@ -1,11 +1,11 @@
 rm (list = ls())
 
-p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170517/"
+p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170517_2/"
 
 for (e in 1:4) plot.ViralLoad(path = p, epidemics = e)
 
 plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
-                           , epidemics = 1, format = F){
+                           , epidemics = 1, per_vir = T){
   
   #Do it for every host
   nr_hosts <- (length(list.files(paste(path, "Epidemics_", epidemics, "/dyn/", sep = ""))) - 1)/2
@@ -16,14 +16,18 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
     {
       path_to_epi <- paste(path, "Epidemics_", epidemics, "/dyn/", sep = "")
       inputfile <- paste(path, "Epidemics_", epidemics, "/dyn/host_", host, "_healthy_cells.dat", sep = "")
+      inputfile2 <- paste(path, "Epidemics_", epidemics, "/dyn/host_", host, ".dat", sep = "")
+      
     }else
     {
       path_to_epi <- paste(path, "Epidemics_", epidemics, "/dyn/", sep = "")
       inputfile <- paste(path, "Epidemics_", epidemics, "/dyn/host_", host, "_healthy_cells.dat", sep = "")
+      inputfile2 <- paste(path, "Epidemics_", epidemics, "/dyn/host_", host, ".dat", sep = "")
+      
     }
     if ( !(paste("host_", host, "_healthy_cells.dat", sep = "") %in% list.files(path_to_epi)) ) next
     fin <- read.table(inputfile, header = T, sep = "\t")
-    
+    cRP <- colorRampPalette(c("blue", "green", "red", "brown"), space = "rgb")
     
     time <- fin[,1]
     viremy <- fin[,4]
@@ -34,22 +38,34 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
     
     normviremy <- viremy/1e7
     normtotc <- tot.cells/1e6
-    if (format == T){
-      par(mar=c(1, 2, 1, 2), mai = c(0.1,0.4,0.1,0.4))
+    if (per_vir == T){
+      
+      fin2 <- read.table(inputfile2, header = T, sep = "\t")
+      
+      plot.nr <- unique(fin2[which(fin2[,3]>max(fin2[,3])/200), 2])
+      my_palette <- cRP(length(plot.nr))
+      
+      par(mar=c(5, 5, 5, 5))
       
       plot(time, normviremy, axes = F, ylim = c(0, max(normviremy)), 
            xlab = "", ylab = "", type = "n", col = "black",)
       lines(time, normviremy, lty = 1, lwd = 2)
       axis(2, ylim=c(0, max(normviremy)), col = "black", lwd = 2, las = 1)
+      mtext(2, text = expression(paste("Viral Load / ", 10^7)), line = 3)
       
-      par(new = T)
-      plot(time, normtotc, axes = F, ylim = c(0, max(normtotc)),
-           xlab = "", ylab = "", type = "n")
-      lines(time, normtotc, lty = 1, lwd = 2, col = "darkgrey")
-      axis(4, ylim = c(0, max(normtotc)), col = "black", lwd = 2, las = 1)
+      legend("topright", legend = "Total Viral Load", 
+             bty = "n", lwd = 2, col = "black")
+      axis(1, xlim = c(time[1], time(length(time))))
+      mtext(1, text = "Time [day]", line = 3)
+      i <- 1
+      for (strain in plot.nr)
+      {
+        t <- fin2[which(fin2[,2] == strain), 1]
+        v <- fin2[which(fin2[,2] == strain), 3]/1e7
+        lines(t, v, col = my_palette[i])
+        i <- i + 1
+      }
       
-      legend("topright", legend = c("Viral Load", "Cell count"), 
-             bty = "n", lwd = 2, col = c("black", "darkgrey"))
     }else{
       par(mar=c(5, 5, 5, 5))
       
