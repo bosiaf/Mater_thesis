@@ -1,8 +1,11 @@
 rm (list = ls())
 
-p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170517_2/"
+p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170523_3/"
 
-for (e in 1:4) plot.ViralLoad(path = p, epidemics = e)
+for (e in 1:8) plot.ViralLoad(path = p, epidemics = e, per_vir = F)
+for (e in 1:8) plot.ViralLoad(path = p, epidemics = e, per_vir = T)
+for (e in 1:8) plot.InfTree(path = p, epidemics = e)
+
 
 plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
                            , epidemics = 1, per_vir = T){
@@ -27,7 +30,7 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
     }
     if ( !(paste("host_", host, "_healthy_cells.dat", sep = "") %in% list.files(path_to_epi)) ) next
     fin <- read.table(inputfile, header = T, sep = "\t")
-    cRP <- colorRampPalette(c("blue", "green", "red", "brown"), space = "rgb")
+    cRP <- colorRampPalette(c("blue", "green", "yellow", "red"), space = "rgb")
     
     time <- fin[,1]
     viremy <- fin[,4]
@@ -65,6 +68,8 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
         lines(t, v, col = my_palette[i])
         i <- i + 1
       }
+      dev.copy2pdf(file = paste(path, "Epidemics_", epidemics, "/ViralLoadPlot_host_", host, "_pervir.pdf", sep = ""), 
+                   height = 7, width = 10)
       
     }else{
       par(mar=c(5, 5, 5, 5))
@@ -86,10 +91,11 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
              bty = "n", lwd = 2, col = c("black", "darkgrey"))
       axis(1, xlim = c(time[1], time(length(time))))
       mtext(1, text = "Time [day]", line = 3)
+      dev.copy2pdf(file = paste(path, "Epidemics_", epidemics, "/ViralLoadPlot_host_", host, ".pdf", sep = ""), 
+                   height = 7, width = 10)
     }
     
-    dev.copy2pdf(file = paste(path, "Epidemics_", epidemics, "/ViralLoadPlot_host_", host, ".pdf", sep = ""), 
-                 height = 7, width = 10)
+    
   }
   
 }
@@ -123,5 +129,103 @@ plot.Density <- function(path = "C:\\Users\\Francesco\\Desktop\\ReconstHIV\\fran
   smoothScatter(fac, virions/1000, pch=".", nbin = 256, 
                 ylab = expression(paste("Virions / ", 10^3)), xlab = "Time",
                 colramp = my.palette, ylim = c(0, quantile(virions, 0.975)/1e3), nrpoints = 0)
+}
+
+
+plot.InfTree <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170517_2/", epidemics = 1)
+{
+  if(suppressWarnings(!require(treescape))) install.packages("treescape")
+  if(suppressWarnings(!require(igraph))) install.packages("igraph")
+  if(suppressWarnings(!require(ape))) install.packages("ape")
+  library("treescape")
+  library("igraph")
+  library("ape")
+  
+  if (.Platform$OS.type == "windows")
+  {
+    path_to_epi <- paste(path, "Epidemics_", epidemics, "/dyn/", sep = "")
+    path_out <- paste(path, "Epidemics_", epidemics, "/", sep = "")
+    inputfile <- paste(path, "Epidemics_", epidemics, "/dyn/Infection_history.dat", sep = "")
+    
+  }else
+  {
+    path_to_epi <- paste(path, "Epidemics_", epidemics, "/dyn/", sep = "")
+    path_out <- paste(path, "Epidemics_", epidemics, "/", sep = "")
+    inputfile <- paste(path, "Epidemics_", epidemics, "/dyn/Infection_history.dat", sep = "")
+  }
+  if ( !("Infection_history.dat" %in% list.files(path_to_epi)) ) 
+  {
+    print ("No file found!")
+    return()
+  }
+  tmax <- as.numeric(readLines(paste(path, "/Epidemics_", epidemics, "/parameters_cluster.dat", sep = ""))[2])
+  fin <- read.table(inputfile, header = T, sep = "\t")
+  tr.mat <- as.matrix(fin[,2:3] + 1)
+  fin_corr <- t(t(fin) + c(0,1,1,0))
+  fin_corr <- cbind (fin_corr, "Rev.Time" = tmax - fin_corr[,1])
+  
+  treegraph <- graph_from_edgelist(tr.mat)
+  par(oma = c(1,0,0,0))
+
+  plot (treegraph)
+  elem_mat <- (dim(fin)[1] + 1)
+  chain <- list()
+  times <- numeric(elem_mat)
+  for (i in 1:elem_mat) chain[[i]] <- as.character(i)
+  for (i in 1:elem_mat) times[i] <- 401
+  iter <- elem_mat-1
+  inf <- fin_corr[,2]
+  infd <- fin_corr[,3]
+  rev.time <- fin_corr[,5]
+  while (iter > 0)
+  {
+    
+    if (times[infd[iter]] != tmax + 1)
+    {
+      outd <- rev.time[iter] - times[infd[iter]]
+      if (times[inf[iter]] != tmax + 1)  
+      {
+        out <- rev.time[iter] - times[inf[iter]]
+        chain[[inf[iter]]] <- paste( "(", chain[[inf[iter]]], ":", out, ",",
+                                     chain[[infd[iter]]], ":", outd, ")", sep = "" )
+        times[inf[iter]] <- rev.time[iter]
+      }else
+      {
+        times[inf[iter]] <- rev.time[iter]
+        chain[[inf[iter]]] <- paste( "(", chain[[inf[iter]]], ":", times[inf[iter]], ",", 
+                                     chain[[infd[iter]]], ":", outd, ")", sep = "" )
+        
+      }
+      times[infd[iter]] <- rev.time[iter]
+    }else
+    {
+      times[infd[iter]] <- rev.time[iter]
+      if (times[inf[iter]] != tmax + 1)  
+      {
+        out <- rev.time[iter] - times[inf[iter]]
+        chain[[inf[iter]]] <- paste( "(", chain[[inf[iter]]], ":", out, ",",
+                                     chain[[infd[iter]]], ":", times[infd[iter]], ")", sep = "" )
+        times[inf[iter]] <- rev.time[iter]
+      }else
+      {
+        times[inf[iter]] <- rev.time[iter]
+        chain[[inf[iter]]] <- paste( "(", chain[[inf[iter]]], ":", times[inf[iter]], ",", 
+                                     chain[[infd[iter]]], ":", times[infd[iter]], ")", sep = "" )
+        
+      }
+    }
+    
+    iter <- iter - 1  
+  }
+  
+  NewickTree <- paste(chain[[1]], ";", sep = "")
+  phy <- read.tree(text = NewickTree)
+  phy$root.time <- fin_corr[1]
+  phy$tip.label <- as.character(as.numeric(phy$tip.label) - 1)
+  plot.phylo(phy)
+  axisPhylo(backward = F, root.time = phy$root.time)
+  
+  dev.copy2pdf(file = paste(path_out, "Infection_History.pdf"))
+  
 }
 
