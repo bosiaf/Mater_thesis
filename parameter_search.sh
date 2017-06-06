@@ -12,11 +12,21 @@ do
 	do
 		echo "Case: $case"
 		cp -r ./Output/Epidemics_Tmpl ./Output/Epidemics_$case
-		awk 'NR==6 {$0="./Output/Epidemics_'$case'/dyn/"}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/parameters_cluster.dat
-		awk 'NR==8 {$0="./Output/Epidemics_'$case'/seq/"}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/parameters_cluster.dat
-		awk 'NR==29 {$0='$i'}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/parameters_cluster.dat
-		awk 'NR==39 {$0='${FITNESS[$j]}'}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/parameters_cluster.dat
-		awk 'NR==41 {$2='${FIT_NON_SNP[$j]}'}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/parameters_cluster.dat
+		awk 'NR==6 {$0="./Output/Epidemics_'$case'/dyn/"}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/par.dat
+		rm ./Output/Epidemics_$case/parameters_cluster.dat
+		mv ./Output/Epidemics_$case/par.dat ./Output/Epidemics_$case/parameters_cluster.dat
+		awk 'NR==8 {$0="./Output/Epidemics_'$case'/seq/"}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/par.dat
+		rm ./Output/Epidemics_$case/parameters_cluster.dat
+		mv ./Output/Epidemics_$case/par.dat ./Output/Epidemics_$case/parameters_cluster.dat
+		awk 'NR==29 {$0='$i'}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/par.dat
+		rm ./Output/Epidemics_$case/parameters_cluster.dat
+		mv ./Output/Epidemics_$case/par.dat ./Output/Epidemics_$case/parameters_cluster.dat
+		awk 'NR==39 {$0='${FITNESS[$j]}'}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/par.dat
+		rm ./Output/Epidemics_$case/parameters_cluster.dat
+		mv ./Output/Epidemics_$case/par.dat ./Output/Epidemics_$case/parameters_cluster.dat
+		awk 'NR==41 {$2='${FIT_NON_SNP[$j]}'}1' ./Output/Epidemics_$case/parameters_cluster.dat > ./Output/Epidemics_$case/par.dat
+		rm ./Output/Epidemics_$case/parameters_cluster.dat
+		mv ./Output/Epidemics_$case/par.dat ./Output/Epidemics_$case/parameters_cluster.dat
 		echo ${FITNESS[$j]}
 		echo ${FITNESS_NON_SNP[$j]}
 		((case = case + 1))
