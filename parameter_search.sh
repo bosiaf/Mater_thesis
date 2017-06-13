@@ -17,7 +17,7 @@ do
 			echo "Case: $case"
 			cp -r ./Output/Epidemics_Tmpl $PTO/Epidemics_$case
 			
-			awk 'NR==6 {$0='$PTO'/Epidemics_'$case'/dyn/"}1' $PTO/Epidemics_$case/parameters_cluster.dat > $PTO/Epidemics_$case/par.dat
+			awk 'NR==6 {$0="'$PTO'/Epidemics_'$case'/dyn/"}1' $PTO/Epidemics_$case/parameters_cluster.dat > $PTO/Epidemics_$case/par.dat
 			rm $PTO/Epidemics_$case/parameters_cluster.dat
 			mv $PTO/Epidemics_$case/par.dat $PTO/Epidemics_$case/parameters_cluster.dat
 			awk 'NR==8 {$0="'$PTO'/Epidemics_'$case'/seq/"}1' $PTO/Epidemics_$case/parameters_cluster.dat > $PTO/Epidemics_$case/par.dat
