@@ -7,6 +7,7 @@ case=1
 SEED=13
 PTO=$SCRATCH
 
+cp parameter_search.sh $PTO/
 
 for i in ${INF_RATE_CONST[*]}
 do
