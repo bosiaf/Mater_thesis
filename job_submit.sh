@@ -2,7 +2,7 @@
 
 cores=2
 case=1
-HowMany=544
+HowMany=880
 PTO=$SCRATCH
 
 export OMP_NUM_THREADS=$cores
@@ -12,6 +12,6 @@ while [ $case -le $HowMany ]
 do
 #	export GMON_OUT_PREFIX=$case
 #	echo $GMON_OUT_PREFIX
-	bsub -n $cores -R "rusage[scratch=500]" -oo $PTO/Epidemics_$case/output.txt ./CEvo.o $PTO/Epidemics_$case/parameters_cluster.dat
+	bsub -n $cores -oo $PTO/Epidemics_$case/output.txt ./CEvo.o $PTO/Epidemics_$case/parameters_cluster.dat
 	((case = case + 1))
 done
