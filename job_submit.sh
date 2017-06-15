@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cores=2
+cores=1
 case=1
 HowMany=880
 PTO=$SCRATCH

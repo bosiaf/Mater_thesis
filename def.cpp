@@ -486,7 +486,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 }
 
-void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
+void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
 {
 	ifstream file_in(file);
 	if (!file_in.is_open())
@@ -529,6 +529,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp.ignore();
 	inp.ignore();
 	getline(inp, snps, '\n');
+	inp >> vol;
 	inp >> v0;
 	inp >> h0;
 	inp >> hc_ren;
@@ -600,7 +601,9 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	cout << "Location of SNPs: ";
 	for (unsigned i = 0; i < SNPs.size(); ++i) cout << SNPs[i] << " ";
 	cout << endl;
-	cout << "Initial healthy cells (hc): " << h0 << endl;
+	cout << "The simulation volume is " << vol << "mm^3" << endl;
+	cout << "Initial virions (/mm^3): " << v0 << endl;
+	cout << "Initial healthy cells (/mm^3): " << h0 << endl;
 	cout << "Renewal rate of hc: " << hc_ren << endl;
 	cout << "Death rate of a hc: " << dhc << endl;
 	cout << "Death rate of a infected cell: " << dic << endl;

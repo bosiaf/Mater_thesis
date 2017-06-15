@@ -11,7 +11,7 @@
 using namespace std;
 using namespace personal;
 unsigned personal::MAX_TSTEP;
-int personal::v0, personal::h0, personal::hc_renew, personal::burst_size, personal::nr_chunks;
+int personal::vol, personal::v0, personal::h0, personal::hc_renew, personal::burst_size, personal::nr_chunks;
 unsigned personal::seed;
 string personal::path_to_tmat, personal::path_output_dyn, personal::path_output_seq, personal::seq0;
 double personal::d_hc, personal::d_ic, personal::d_v, personal::k_inf, personal::S_df, personal::k_btw, 
@@ -54,7 +54,7 @@ int main(int argc, char * argv[])
 	//if number of arguments provided is correct
 	if (argc == 2){
 	//read in parameters, in mm^{-3} day{-1}
-		read_pars(argv[1], MAX_TSTEP, path_to_tmat, path_output_dyn, path_output_seq, seq0, SNPs, v0, h0, hc_renew, d_hc, d_ic, burst_size, d_v, k_inf, S_df, k_btw, k_mut, fit_snp, fit_not_snp, weight_not_snp, dic_fit_dep, dv_fit_dep, inf_fit_dep, k_fit, ad_imm_sys, fit_change, fit_low_cap, seed, nr_chunks, parallel, seq_print);
+		read_pars(argv[1], MAX_TSTEP, path_to_tmat, path_output_dyn, path_output_seq, seq0, SNPs, vol, v0, h0, hc_renew, d_hc, d_ic, burst_size, d_v, k_inf, S_df, k_btw, k_mut, fit_snp, fit_not_snp, weight_not_snp, dic_fit_dep, dv_fit_dep, inf_fit_dep, k_fit, ad_imm_sys, fit_change, fit_low_cap, seed, nr_chunks, parallel, seq_print);
 	}
 	else //else print a statement with the correct usage
 	{
@@ -63,6 +63,10 @@ int main(int argc, char * argv[])
 	
 	//get probability from rate
 	double p_mut = rtp(k_mut);
+
+	//Adapt the volume dependent parameters to the volume
+	h0 *= vol;
+	k_inf /= vol;
 	//reseed with given seed
 	geng.seed(seed);
 
