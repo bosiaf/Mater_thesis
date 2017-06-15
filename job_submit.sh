@@ -1,8 +1,8 @@
 #!/bin/bash
 
-cores=1
+cores=4
 case=1
-HowMany=880
+HowMany=338
 PTO=$SCRATCH
 
 export OMP_NUM_THREADS=$cores
