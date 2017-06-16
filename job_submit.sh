@@ -3,7 +3,7 @@
 cores=4
 case=1
 HowMany=338
-PTO=$SCRATCH
+PTO=$SCRATCH/Set2
 
 export OMP_NUM_THREADS=$cores
 export OMP_PROC_BIND=true
