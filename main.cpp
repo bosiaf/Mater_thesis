@@ -66,6 +66,7 @@ int main(int argc, char * argv[])
 
 	//Adapt the volume dependent parameters to the volume
 	h0 *= vol;
+	hc_renew *= vol;
 	k_inf /= vol;
 	//reseed with given seed
 	geng.seed(seed);

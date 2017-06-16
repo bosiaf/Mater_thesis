@@ -602,7 +602,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	for (unsigned i = 0; i < SNPs.size(); ++i) cout << SNPs[i] << " ";
 	cout << endl;
 	cout << "The simulation volume is " << vol << "mm^3" << endl;
-	cout << "Initial virions (/mm^3): " << v0 << endl;
+	cout << "Initial virions: " << v0 << endl;
 	cout << "Initial healthy cells (/mm^3): " << h0 << endl;
 	cout << "Renewal rate of hc: " << hc_ren << endl;
 	cout << "Death rate of a hc: " << dhc << endl;

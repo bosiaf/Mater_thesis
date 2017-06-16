@@ -1,9 +1,9 @@
 #!/bin/bash
 
-cores=1
+cores=4
 case=1
-HowMany=880
-PTO=$SCRATCH
+HowMany=338
+PTO=$SCRATCH/Set2
 
 export OMP_NUM_THREADS=$cores
 export OMP_PROC_BIND=true
