@@ -1,37 +1,49 @@
 rm (list = ls())
 
-p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170613/"
-nr.ep <- 544
-
-##20170607_3
-#INF_RATE_CONST <- c(4.0e-9, 7.0e-9, 1.0e-8, 3.0e-8, 6.0e-8, 9.0e-8, 1.5e-7, 4.0e-7, 6.0e-7, 9.0e-7, 1.5e-6, 
-#                    4.0e-6, 6.0e-6, 7.0e-6, 9.0e-6, 1.0e-5, 1.2e-5, 1.4e-5)
-#FITNESS <- c(0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55)
-#FIT_NON_SNP <- c(-0.1, -0.15, -0.2, -0.3, -0.35, -0.4, -0.45, -0.5, -0.55, -0.6, -0.65)
-
-##20170613
-INF_RATE_CONST <- c(6.0e-8, 9.0e-8, 1.5e-7, 4.0e-7, 6.0e-7, 9.0e-7, 1.5e-6, 4.0e-6, 6.0e-6, 7.0e-6, 9.0e-6,
-                    1.0e-5, 1.2e-5, 1.4e-5, 1.7e-5, 2.0e-5, 2.3e-5)
-FITNESS <- c(0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0)
-FIT_NON_SNP <- c(-0.35, -0.4, -0.45, -0.5, -0.55, -0.6, -0.65, -0.7, -0.75, -0.8, -0.85, -0.9, -0.95, -1.0, -1.05, -1.1)
+p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170616/"
+par_file <- paste(p, "parameter_search.sh", sep = "")
+nr.ep <- length(list.dirs(p, recursive = F))
 
 
-plot.Parmap(path = p, just.adimsys = F, inf = INF_RATE_CONST, fit = FITNESS, nr.ep, threshold = 1.5e6)
-for (e in 1:nr.ep) Parameters.Test(path = p, epidemics = e, threshold = 1.5e6)
-for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F)
+#read parameters
+
+#get Infection rate constant line and parse it
+irc <- readLines(par_file)[3]
+irc <- strsplit(irc, split = '[\\(\\)]')[[1]][2]
+irc_label <- strsplit(irc, split = " ")[[1]]
+irc <- as.numeric(strsplit(irc, split = " ")[[1]])
+
+#get fitness and parse it
+fitness <- readLines(par_file)[4]
+fitness <- strsplit(fitness, split = '[\\(\\)]')[[1]][2]
+fitness_label <- strsplit(fitness, split = " ")[[1]]
+fitness <- as.numeric(strsplit(fitness, split = " ")[[1]])
+
+#End of parameter reading
+
+
+plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
+for (e in 1:nr.ep) Parameters.Test(path = p, epidemics = e, threshold = 1.5e2)
+for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = T)
 for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T)
 for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
 
 
 
 plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
-                           , epidemics = 1, per_vir = T){
+                           , epidemics = 1, per_vir = T, onlyHC = T){
   
   if(suppressWarnings(!require(assertthat, quietly = T))) install.packages("assertthat")
   library(assertthat)
   #Do it for every host
   cat(sprintf("EPIDEMICS %d:\n", epidemics))
-  nr_hosts <- (length(list.files(paste(path, "Epidemics_", epidemics, "/dyn/", sep = ""))) - 1)/2
+  if (onlyHC)
+  {
+    nr_hosts <- (length(list.files(paste(path, "Epidemics_", epidemics, "/dyn/", sep = ""))) - 1)
+  }
+  else{
+    nr_hosts <- (length(list.files(paste(path, "Epidemics_", epidemics, "/dyn/", sep = ""))) - 1)/2
+  }
   cat(sprintf("Found %g hosts\n", nr_hosts))
   for (host in 0:(nr_hosts - 1) )
   {
@@ -67,10 +79,11 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
     nr.hc <- fin[,2]
     tot.cells <- fin[,3]
     nr.ic <- tot.cells - nr.hc
+    volume <- as.numeric(readLines(paste(path, "Epidemics_", epidemics, "/parameters_cluster.dat", sep = ""))[15])
     #other stuff
-    
-    normviremy <- viremy/1e7
-    normtotc <- tot.cells/1e6
+    #calculate viremy and tot cells on a /mm^3 basis
+    normviremy <- viremy/volume
+    normtotc <- tot.cells/volume
     if (per_vir == T){
       
       if( !not_empty(readLines(con = inputfile2)) )
@@ -86,10 +99,10 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
       par(mar=c(5, 5, 5, 5))
       
       plot(time, normviremy, axes = F, ylim = c(0, max(normviremy)), 
-           xlab = "", ylab = "", type = "n", col = "black",)
+           xlab = "", ylab = "", type = "n", col = "black")
       lines(time, normviremy, lty = 1, lwd = 2)
       axis(2, ylim=c(0, max(normviremy)), col = "black", lwd = 2, las = 1)
-      mtext(2, text = expression(paste("Viral Load / ", 10^7)), line = 3)
+      mtext(2, text = expression(paste("Viral Load / ", "mm"^3)), line = 3)
       
       legend("topright", legend = "Total Viral Load", 
              bty = "n", lwd = 2, col = "black")
@@ -110,17 +123,17 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
       par(mar=c(5, 5, 5, 5))
       
       plot(time, normviremy, axes = F, ylim = c(0, max(normviremy)), 
-           xlab = "", ylab = "", type = "n", col = "black",)
+           xlab = "", ylab = "", type = "n", col = "black")
       lines(time, normviremy, lty = 1, lwd = 2)
       axis(2, ylim=c(0, max(normviremy)), col = "black", lwd = 2, las = 1)
-      mtext(2, text = expression(paste("Viral Load / ", 10^7)), line = 3)
+      mtext(2, text = expression(paste("Viral Load / ", "mm"^3)), line = 3)
       
       par(new = T)
       plot(time, normtotc, axes = F, ylim = c(0, max(normtotc)),
            xlab = "", ylab = "", type = "n")
       lines(time, normtotc, lty = 1, lwd = 2, col = "darkgrey")
       axis(4, ylim = c(0, max(normtotc)), col = "black", lwd = 2, las = 1)
-      mtext(4, text = expression(paste("Cells count / ", 10^6)), line = 3)
+      mtext(4, text = expression(paste("Cells count / ", "mm"^3)), line = 3)
       
       legend("topright", legend = c("Viral Load", "Cell count"), 
              bty = "n", lwd = 2, col = c("black", "darkgrey"))
@@ -271,7 +284,7 @@ plot.InfTree <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis
 
 
 Parameters.Test <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
-                            , epidemics = 1, threshold = 1.5e6){
+                            , epidemics = 1, threshold = 1.5e2){
   
   bla <- ""
   if(suppressWarnings(!require(caTools, quietly = T))) install.packages("caTools")
@@ -392,9 +405,12 @@ Parameters.Test <- function(path = "D:/Documents/ETH/Master/4Semester/Master_the
         temp_hosts <- temp_hosts -1
         next
       }
-      viremy <- fin[,4]
-      nr.hc <- fin[,2]
-      tot.cells <- fin[,3]
+      
+      volume <- as.numeric(readLines(paste(path, "/Epidemics_", epidemics, "/parameters_cluster.dat", sep = ""))[15])
+      
+      viremy <- fin[,4]/volume
+      nr.hc <- fin[,2]/volume
+      tot.cells <- fin[,3]/volume
       nr.ic <- tot.cells - nr.hc
       viremy[which (viremy < threshold)] <- threshold
       #just consider the days after the primary infection
@@ -414,10 +430,12 @@ Parameters.Test <- function(path = "D:/Documents/ETH/Master/4Semester/Master_the
 
 
 plot.Parmap <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170607_3/"
-                         , just.adimsys = F, inf = INF_RATE_CONST, fit = FITNESS, nr.ep, threshold = 1.5e6)
+                         , just.adimsys = F, inf = INF_RATE_CONST, fit = FITNESS, nr.ep, threshold = 1.5e2)
 {
   if(suppressWarnings(!require(lattice, quietly = T))) install.packages("lattice")
   if(suppressWarnings(!require(graphics, quietly = T))) install.packages("graphics")
+  
+  cRP <- colorRampPalette(c("yellow", "red"), space = "rgb")
   
   
   if(just.adimsys)
@@ -462,13 +480,13 @@ plot.Parmap <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/
     x.scale <- list(at=fit)
     y.scale <- list(log = 2, at=inf)
     
-    pdf(file = paste(path, "/Parameters_heatmap_no_adimsys.pdf", sep = ""), width = 7, height = 10)
+    pdf(file = paste(path, "Parameters_heatmap_no_adimsys.pdf", sep = ""), width = 7, height = 10)
     print(levelplot(z~Var1*Var2, g, cuts = 50, scales = list(x = x.scale, y = y.scale), 
               xlab = "Fitness Bonus", ylab = "Infection Rate Constant"))
 
     dev.off()
     
-    pdf(file = paste(path, "/Parameters_heatmap_adimsys.pdf", sep = ""), width = 7, height = 10)
+    pdf(file = paste(path, "Parameters_heatmap_adimsys.pdf", sep = ""), width = 7, height = 10)
     
     print(levelplot(z~Var1*Var2, g_adimsys, cuts = 50, scales = list(x = x.scale, y = y.scale), 
               xlab = "Fitness Bonus", ylab = "Infection Rate Constant"))
