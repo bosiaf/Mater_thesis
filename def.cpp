@@ -488,6 +488,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
 {
+	string seq_in;
 	ifstream file_in(file);
 	if (!file_in.is_open())
 	{
@@ -525,8 +526,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> path_to_tmat;
 	inp >> path_output_dyn;
 	inp >> path_output_seq;
-	inp >> seq;
-	inp.ignore();
+	inp >> seq_in;
 	inp.ignore();
 	getline(inp, snps, '\n');
 	inp >> vol;
@@ -592,16 +592,30 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	istringstream buffer2(weight_not_snp_str);
 	copy(istream_iterator<long int>(buffer2), istream_iterator<long int>(), back_inserter(weight_not_snp));
 
+	//Read the sequence in
+	ifstream sequ_in(seq_in);
+	if (!sequ_in.is_open())
+	{
+		cout << "Cannot find specified sequence file!" << endl;
+		return;
+	}
+	sequ_in >> seq;
+	
+	sequ_in.close();
+	
+	cout << "Initial sequence: " << seq << endl;
+
+
 	cout << "Time steps to simulate: " << max_tstep << endl;
 	cout << "Path to transistion matrix: " << path_to_tmat << endl;
 	cout << "Path to output folder for dynamics files: " << path_output_dyn << endl;
 	cout << "Path to output folder for sequence files: " << path_output_seq << endl;
-	cout << "Initial sequence: " << seq << endl;
+	cout << "Initial sequence in: " << seq_in << endl;
 	cout << "Sequence size is: " << seq.size() << endl;
 	cout << "Location of SNPs: ";
 	for (unsigned i = 0; i < SNPs.size(); ++i) cout << SNPs[i] << " ";
 	cout << endl;
-	cout << "The simulation volume is " << vol << "mm^3" << endl;
+	cout << "The simulation volume is " << vol << " mm^3" << endl;
 	cout << "Initial virions: " << v0 << endl;
 	cout << "Initial healthy cells (/mm^3): " << h0 << endl;
 	cout << "Renewal rate of hc: " << hc_ren << endl;
@@ -1004,10 +1018,18 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	for (int i = 0; i < N_STR; ++i)
 	{
 		int norm_burst = 0;
+		
 		//Calculate the burst size with k_fit as fitness dependency factor
 		if (V[i]->get_icell() != 0)
 		{
-			norm_burst = static_cast<int>(rnorm(1, k_fit * fit[i] * burst*V[i]->get_icell(), k_fit * fit[i] * burst*V[i]->get_icell() / 3.0, gen).back());
+			if (k_fit)
+			{
+				norm_burst = static_cast<int>(rnorm(1, fit[i] * burst*V[i]->get_icell(), fit[i] * burst*V[i]->get_icell() / 3.0, gen).back());
+			}
+			else
+			{
+				norm_burst = static_cast<int>(rnorm(1, burst * V[i]->get_icell(), burst * V[i]->get_icell() / 3, gen).back());
+			}
 		}
 		else
 		{
