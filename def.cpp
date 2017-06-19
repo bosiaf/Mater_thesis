@@ -3,6 +3,7 @@
 #include<vector>
 #include<list>
 #include<string>
+#include<functional>
 #include<cmath>
 #include<fstream>
 #include<sstream>
@@ -665,11 +666,12 @@ bool personal::fileExists(const string & file)
 }
 
 //sequences class member functions
-sequences::sequences(string s_i, double fit)
+sequences::sequences(string s_i, double fit, size_t h)
 {
 	sequence = s_i;
 	fitness = fit;
 	s_size = s_i.size();
+	hash = h;
 }
 
 string sequences::get_sequence()
@@ -1237,6 +1239,8 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 	//fitness through escape in a first approximation (better models will follow)
 	//use constant variable to prevent down scaling of loop
 	int N_STR = V.size();
+	hash<string> HS;
+	size_t hs;
 	for (int str = 0; str < N_STR; ++str)
 	{
 		//using this variable prevents down-scaling of for loop
@@ -1265,6 +1269,11 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 				char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind]);
 				//substitute the old with the new
 				sq[ind] = subst;
+
+				//calculate hash of first 50 characters of sequence
+				if(s_sz > 50) hs = HS(sq.substr(0,50));
+				else hs = HS(sq);
+
 				//now look for the sequence in the already available sequences
 				bool found = false;
 				for (int i = 0; i < V.size(); ++i)
@@ -1272,7 +1281,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					//How to do string comparison? Maybe hash table would be the best
 					//if not use Rabin-Karp. But a lookup-table would be nice
 					//FIX THIS
-					if (V[i]->get_sequence()->get_sequence() == sq)
+					if (V[i]->get_sequence()->hash == hs && V[i]->get_sequence()->get_sequence() == sq)
 					{
 						V[i]->set_icell(1);
 						found = true;
@@ -1287,7 +1296,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					if (f < fit_low_cap) f = fit_low_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
-					sequences * s0 = new sequences(sq, f);
+					sequences * s0 = new sequences(sq, f, hs);
 					strain * st = new strain(s0, n_str, time);
 					add_line(st);
 				}
@@ -1303,6 +1312,9 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind[m]]);
 					sq[ind[m]] = subst;
 				}
+				
+				if (s_sz > 50) hs = HS(sq.substr(0,50));
+				else hs = HS(sq);
 
 				bool found = false;
 
@@ -1311,7 +1323,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					//How to do string comparison? Maybe hash table would be the best
 					//if not use Rabin-Karp. But a lookup-table would be nice
 					//FIX THIS
-					if (V[i]->get_sequence()->get_sequence() == sq)
+					if (V[i]->get_sequence()->hash == hs && V[i]->get_sequence()->get_sequence() == sq)
 					{
 						V[i]->set_icell(1);
 						found = true;
@@ -1330,7 +1342,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					if (f < fit_low_cap) f = fit_low_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
-					sequences * s0 = new sequences(sq, f);
+					sequences * s0 = new sequences(sq, f, hs);
 					strain * st = new strain(s0, n_str, time);
 					add_line(st);
 				}
@@ -1443,7 +1455,19 @@ void epidemics::new_host_infection(mt19937 & gen, string path)
 	//already existing sequences will not suffice!)
 	//A pointer to an old sequence would make the two sequences impossible to
 	//evolve independently
-	sequences * a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1);
+	std::hash<std::string> H_new;
+	sequences * a;
+
+	if (strain_infecting->get_sequence()->get_size() > 50) 
+	{
+		a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1,
+		H_new(strain_infecting->get_sequence()->get_sequence().substr(0,50)));
+	}
+	else
+	{
+		a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1,
+		H_new(strain_infecting->get_sequence()->get_sequence()));
+	}
 	//the new host starts with v0 virions, but could actually start with a random number of virions.
 	int n = static_cast<int>(rnorm(1, v0, v0 / 3, gen).back());
 	if (n < 0) n = 1;

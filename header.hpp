@@ -4,6 +4,7 @@
 #include<vector>
 #include<sstream>
 #include<string>
+#include<functional>
 
 using namespace std;
 
@@ -35,7 +36,9 @@ namespace personal
 			double fitness;
 			unsigned s_size;
 		public:
-			sequences(string s_i, double fit);
+
+			size_t hash;
+			sequences(string s_i, double fit, size_t h);
 
 			string get_sequence();
 			void set_sequence(string s);
