@@ -1271,7 +1271,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 				sq[ind] = subst;
 
 				//calculate hash of first 50 characters of sequence
-				if(s_sz > 50) hs = HS(sq.substr(0,50));
+				if(s_sz > 100) hs = HS(sq.substr(0,100));
 				else hs = HS(sq);
 
 				//now look for the sequence in the already available sequences
@@ -1313,7 +1313,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					sq[ind[m]] = subst;
 				}
 				
-				if (s_sz > 50) hs = HS(sq.substr(0,50));
+				if (s_sz > 100) hs = HS(sq.substr(0,100));
 				else hs = HS(sq);
 
 				bool found = false;
@@ -1458,10 +1458,10 @@ void epidemics::new_host_infection(mt19937 & gen, string path)
 	std::hash<std::string> H_new;
 	sequences * a;
 
-	if (strain_infecting->get_sequence()->get_size() > 50) 
+	if (strain_infecting->get_sequence()->get_size() > 100) 
 	{
 		a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1,
-		H_new(strain_infecting->get_sequence()->get_sequence().substr(0,50)));
+		H_new(strain_infecting->get_sequence()->get_sequence().substr(0,100)));
 	}
 	else
 	{

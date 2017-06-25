@@ -95,7 +95,7 @@ int main(int argc, char * argv[])
 	//set the initial strain values
 	size_t init_h;
 	std::hash<std::string> Init_H;
-	if (seq0.size() > 50) init_h = Init_H(seq0.substr(0,50));
+	if (seq0.size() > 100) init_h = Init_H(seq0.substr(0,100));
 	else init_h = Init_H(seq0);
 
 	sequences * s0 = new sequences(seq0, 1, init_h);
