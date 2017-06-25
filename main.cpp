@@ -93,7 +93,12 @@ int main(int argc, char * argv[])
 	//Discrete time algorithm
 	
 	//set the initial strain values
-	sequences * s0 = new sequences(seq0, 1);
+	size_t init_h;
+	std::hash<std::string> Init_H;
+	if (seq0.size() > 100) init_h = Init_H(seq0.substr(0,100));
+	else init_h = Init_H(seq0);
+
+	sequences * s0 = new sequences(seq0, 1, init_h);
 	
 	//initial sequence, one virion, 0 infected cells
 	strain * st = new strain(s0, v0, 0, 0, 1, 0);

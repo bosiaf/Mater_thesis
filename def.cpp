@@ -3,6 +3,7 @@
 #include<vector>
 #include<list>
 #include<string>
+#include<functional>
 #include<cmath>
 #include<fstream>
 #include<sstream>
@@ -488,6 +489,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
 {
+	string seq_in;
 	ifstream file_in(file);
 	if (!file_in.is_open())
 	{
@@ -525,8 +527,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> path_to_tmat;
 	inp >> path_output_dyn;
 	inp >> path_output_seq;
-	inp >> seq;
-	inp.ignore();
+	inp >> seq_in;
 	inp.ignore();
 	getline(inp, snps, '\n');
 	inp >> vol;
@@ -592,16 +593,30 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	istringstream buffer2(weight_not_snp_str);
 	copy(istream_iterator<long int>(buffer2), istream_iterator<long int>(), back_inserter(weight_not_snp));
 
+	//Read the sequence in
+	ifstream sequ_in(seq_in);
+	if (!sequ_in.is_open())
+	{
+		cout << "Cannot find specified sequence file!" << endl;
+		return;
+	}
+	sequ_in >> seq;
+	
+	sequ_in.close();
+	
+	cout << "Initial sequence: " << seq << endl;
+
+
 	cout << "Time steps to simulate: " << max_tstep << endl;
 	cout << "Path to transistion matrix: " << path_to_tmat << endl;
 	cout << "Path to output folder for dynamics files: " << path_output_dyn << endl;
 	cout << "Path to output folder for sequence files: " << path_output_seq << endl;
-	cout << "Initial sequence: " << seq << endl;
+	cout << "Initial sequence in: " << seq_in << endl;
 	cout << "Sequence size is: " << seq.size() << endl;
 	cout << "Location of SNPs: ";
 	for (unsigned i = 0; i < SNPs.size(); ++i) cout << SNPs[i] << " ";
 	cout << endl;
-	cout << "The simulation volume is " << vol << "mm^3" << endl;
+	cout << "The simulation volume is " << vol << " mm^3" << endl;
 	cout << "Initial virions: " << v0 << endl;
 	cout << "Initial healthy cells (/mm^3): " << h0 << endl;
 	cout << "Renewal rate of hc: " << hc_ren << endl;
@@ -651,11 +666,12 @@ bool personal::fileExists(const string & file)
 }
 
 //sequences class member functions
-sequences::sequences(string s_i, double fit)
+sequences::sequences(string s_i, double fit, size_t h)
 {
 	sequence = s_i;
 	fitness = fit;
 	s_size = s_i.size();
+	hash = h;
 }
 
 string sequences::get_sequence()
@@ -1004,10 +1020,18 @@ bool host::wi_host_inf_death(double k, double d_infc, double d_vir, long int bur
 	for (int i = 0; i < N_STR; ++i)
 	{
 		int norm_burst = 0;
+		
 		//Calculate the burst size with k_fit as fitness dependency factor
 		if (V[i]->get_icell() != 0)
 		{
-			norm_burst = static_cast<int>(rnorm(1, k_fit * fit[i] * burst*V[i]->get_icell(), k_fit * fit[i] * burst*V[i]->get_icell() / 3.0, gen).back());
+			if (k_fit)
+			{
+				norm_burst = static_cast<int>(rnorm(1, fit[i] * burst*V[i]->get_icell(), fit[i] * burst*V[i]->get_icell() / 3.0, gen).back());
+			}
+			else
+			{
+				norm_burst = static_cast<int>(rnorm(1, burst * V[i]->get_icell(), burst * V[i]->get_icell() / 3, gen).back());
+			}
 		}
 		else
 		{
@@ -1215,6 +1239,8 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 	//fitness through escape in a first approximation (better models will follow)
 	//use constant variable to prevent down scaling of loop
 	int N_STR = V.size();
+	hash<string> HS;
+	size_t hs;
 	for (int str = 0; str < N_STR; ++str)
 	{
 		//using this variable prevents down-scaling of for loop
@@ -1243,6 +1269,11 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 				char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind]);
 				//substitute the old with the new
 				sq[ind] = subst;
+
+				//calculate hash of first 50 characters of sequence
+				if(s_sz > 100) hs = HS(sq.substr(0,100));
+				else hs = HS(sq);
+
 				//now look for the sequence in the already available sequences
 				bool found = false;
 				for (int i = 0; i < V.size(); ++i)
@@ -1250,7 +1281,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					//How to do string comparison? Maybe hash table would be the best
 					//if not use Rabin-Karp. But a lookup-table would be nice
 					//FIX THIS
-					if (V[i]->get_sequence()->get_sequence() == sq)
+					if (V[i]->get_sequence()->hash == hs && V[i]->get_sequence()->get_sequence() == sq)
 					{
 						V[i]->set_icell(1);
 						found = true;
@@ -1265,7 +1296,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					if (f < fit_low_cap) f = fit_low_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
-					sequences * s0 = new sequences(sq, f);
+					sequences * s0 = new sequences(sq, f, hs);
 					strain * st = new strain(s0, n_str, time);
 					add_line(st);
 				}
@@ -1281,6 +1312,9 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind[m]]);
 					sq[ind[m]] = subst;
 				}
+				
+				if (s_sz > 100) hs = HS(sq.substr(0,100));
+				else hs = HS(sq);
 
 				bool found = false;
 
@@ -1289,7 +1323,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					//How to do string comparison? Maybe hash table would be the best
 					//if not use Rabin-Karp. But a lookup-table would be nice
 					//FIX THIS
-					if (V[i]->get_sequence()->get_sequence() == sq)
+					if (V[i]->get_sequence()->hash == hs && V[i]->get_sequence()->get_sequence() == sq)
 					{
 						V[i]->set_icell(1);
 						found = true;
@@ -1308,7 +1342,7 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					if (f < fit_low_cap) f = fit_low_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
-					sequences * s0 = new sequences(sq, f);
+					sequences * s0 = new sequences(sq, f, hs);
 					strain * st = new strain(s0, n_str, time);
 					add_line(st);
 				}
@@ -1421,7 +1455,19 @@ void epidemics::new_host_infection(mt19937 & gen, string path)
 	//already existing sequences will not suffice!)
 	//A pointer to an old sequence would make the two sequences impossible to
 	//evolve independently
-	sequences * a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1);
+	std::hash<std::string> H_new;
+	sequences * a;
+
+	if (strain_infecting->get_sequence()->get_size() > 100) 
+	{
+		a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1,
+		H_new(strain_infecting->get_sequence()->get_sequence().substr(0,100)));
+	}
+	else
+	{
+		a = new sequences(strain_infecting->get_sequence()->get_sequence(), 1,
+		H_new(strain_infecting->get_sequence()->get_sequence()));
+	}
 	//the new host starts with v0 virions, but could actually start with a random number of virions.
 	int n = static_cast<int>(rnorm(1, v0, v0 / 3, gen).back());
 	if (n < 0) n = 1;
