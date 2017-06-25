@@ -1,32 +1,45 @@
 rm (list = ls())
 
-p <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170616/"
-par_file <- paste(p, "parameter_search.sh", sep = "")
-nr.ep <- length(list.dirs(p, recursive = F))
+pa <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170623/"
 
+for (d in dir(pa, recursive = F))
+{
+  p <- paste(pa, "/", d, "/", sep = "")
+  par_file <- paste(p, "parameter_search.sh", sep = "")
+  nr.ep <- length(list.dirs(p, recursive = F))
+  
+  
+  #read parameters
+  
+  #get Infection rate constant line and parse it
+  irc <- readLines(par_file)[3]
+  irc <- strsplit(irc, split = '[\\(\\)]')[[1]][2]
+  irc_label <- strsplit(irc, split = " ")[[1]]
+  irc <- as.numeric(strsplit(irc, split = " ")[[1]])
+  
+  #get fitness and parse it
+  fitness <- readLines(par_file)[4]
+  fitness <- strsplit(fitness, split = '[\\(\\)]')[[1]][2]
+  fitness_label <- strsplit(fitness, split = " ")[[1]]
+  fitness <- as.numeric(strsplit(fitness, split = " ")[[1]])
+  
+  #End of parameter reading
+  
+  
+#  if (strsplit(d, split = "bp")[[1]][1] == "500")
+#  {
+#    plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
+#    for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = T)
+#    for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
+#  }
+#
+#  plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
+#  for (e in 1:nr.ep) Parameters.Test(path = p, epidemics = e, threshold = 1.5e2)
+#  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = T)
+if (strsplit(d, split = "bp")[[1]][1] == "500")  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T, onlyHC = F)
+#  for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
+}
 
-#read parameters
-
-#get Infection rate constant line and parse it
-irc <- readLines(par_file)[3]
-irc <- strsplit(irc, split = '[\\(\\)]')[[1]][2]
-irc_label <- strsplit(irc, split = " ")[[1]]
-irc <- as.numeric(strsplit(irc, split = " ")[[1]])
-
-#get fitness and parse it
-fitness <- readLines(par_file)[4]
-fitness <- strsplit(fitness, split = '[\\(\\)]')[[1]][2]
-fitness_label <- strsplit(fitness, split = " ")[[1]]
-fitness <- as.numeric(strsplit(fitness, split = " ")[[1]])
-
-#End of parameter reading
-
-
-plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
-for (e in 1:nr.ep) Parameters.Test(path = p, epidemics = e, threshold = 1.5e2)
-for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = T)
-for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T)
-for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
 
 
 
@@ -40,8 +53,7 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
   if (onlyHC)
   {
     nr_hosts <- (length(list.files(paste(path, "Epidemics_", epidemics, "/dyn/", sep = ""))) - 1)
-  }
-  else{
+  }else{
     nr_hosts <- (length(list.files(paste(path, "Epidemics_", epidemics, "/dyn/", sep = ""))) - 1)/2
   }
   cat(sprintf("Found %g hosts\n", nr_hosts))
@@ -112,7 +124,7 @@ plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thes
       for (strain in plot.nr)
       {
         t <- fin2[which(fin2[,2] == strain), 1]
-        v <- fin2[which(fin2[,2] == strain), 3]/1e7
+        v <- fin2[which(fin2[,2] == strain), 3]/volume
         lines(t, v, col = my_palette[i])
         i <- i + 1
       }
