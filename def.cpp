@@ -487,7 +487,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 }
 
-void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
+void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print, bool & seq_per_time)
 {
 	string seq_in;
 	ifstream file_in(file);
@@ -557,6 +557,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> nr_chunks;
 	inp >> parallel;
 	inp >> seq_print;
+	inp >> seq_per_time;
 
 	//first look which one of the two versions of SNPs was given, 
 	//checking if the dash is there.
@@ -646,6 +647,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	cout << "Number of Vose sampler updates in wi-host infection: " << nr_chunks << endl;
 	cout << "Using OpenMP parallel computing to treat hosts:" << parallel << endl; 
 	cout << "Printing also advanced sequence data: " << seq_print << endl;
+	cout << "Print a different sequence file for each time step: " << seq_per_time << endl;
 
 	cout << "************************************************************" << endl;
 
@@ -1632,7 +1634,18 @@ void epidemics::print_seq_epidemics(string path)
 	vector<host*>::iterator it_h = hosts.begin();
 	for (; it_h != hosts.end(); ++it_h)
 	{
-		string filename = path + "host_" + to_string((*it_h)->get_ID()) + "_seq.dat";
+		string filename;
+		if (seq_per_time)
+		{
+			filename = path + "host_" + to_string((*it_h)->get_ID()) + "_seq_time_" + \
+					   to_string(time) + ".dat";
+		}
+		else
+		{
+			//print a different file for each timestep
+			filename = path + "host_" + to_string((*it_h)->get_ID()) + "_seq.dat";
+		}
+		
 		ofstream fout;
 
 		if (!fileExists(filename))

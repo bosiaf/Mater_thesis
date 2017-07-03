@@ -19,7 +19,7 @@ personal::k_mut, personal::fit_snp, personal::fit_change, personal::k_fit, perso
 vector<unsigned> personal::SNPs;
 vector<long int> personal::weight_not_snp;
 vector<double> personal::fit_not_snp;
-bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys, personal::parallel, personal::seq_print;
+bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys, personal::parallel, personal::seq_print, personal::seq_per_time;
 mt19937 personal::geng(42);
 mt19937 * genp;
 vector<mt19937*> personal::gens;
@@ -54,7 +54,7 @@ int main(int argc, char * argv[])
 	//if number of arguments provided is correct
 	if (argc == 2){
 	//read in parameters, in mm^{-3} day{-1}
-		read_pars(argv[1], MAX_TSTEP, path_to_tmat, path_output_dyn, path_output_seq, seq0, SNPs, vol, v0, h0, hc_renew, d_hc, d_ic, burst_size, d_v, k_inf, S_df, k_btw, k_mut, fit_snp, fit_not_snp, weight_not_snp, dic_fit_dep, dv_fit_dep, inf_fit_dep, k_fit, ad_imm_sys, fit_change, fit_low_cap, seed, nr_chunks, parallel, seq_print);
+		read_pars(argv[1], MAX_TSTEP, path_to_tmat, path_output_dyn, path_output_seq, seq0, SNPs, vol, v0, h0, hc_renew, d_hc, d_ic, burst_size, d_v, k_inf, S_df, k_btw, k_mut, fit_snp, fit_not_snp, weight_not_snp, dic_fit_dep, dv_fit_dep, inf_fit_dep, k_fit, ad_imm_sys, fit_change, fit_low_cap, seed, nr_chunks, parallel, seq_print, seq_per_time);
 	}
 	else //else print a statement with the correct usage
 	{
