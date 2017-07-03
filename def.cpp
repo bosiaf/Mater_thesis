@@ -487,7 +487,7 @@ void personal::read_in(string file, vector<vector<double> > &trans_mat, bool hea
 
 }
 
-void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
+void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tmat, string & path_output_dyn, string & path_output_seq, string & seq, vector<unsigned> & SNPs, int & vol, int & v0, int & h0, int & hc_ren, double & dhc, double & dic, int & b_size, double & dv, double & kinf, double & sdf, double & kbtw, double & kmut, double & fit_snp, vector<double> & fit_not_snp, vector<long int> & weight_not_snp, bool & dic_fit_dep, bool & dv_fit_dep, bool & inf_fit_dep, double & k_fit, bool & ad_imm_sys, double & fit_change, double & fit_l_c, double & fit_high_cap, unsigned & seed, int & nr_chunks, bool & parallel, bool & seq_print)
 {
 	string seq_in;
 	ifstream file_in(file);
@@ -553,6 +553,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	inp >> ad_imm_sys;
 	inp >> fit_change;
 	inp >> fit_l_c;
+	inp >> fit_high_cap;
 	inp >> seed;
 	inp >> nr_chunks;
 	inp >> parallel;
@@ -642,6 +643,7 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	cout << "Adaptive immune system switch set to: " << ad_imm_sys << endl;
 	cout << "Change of fitness over time is: " << fit_change << endl;
 	cout << "Fitness low cap is: " << fit_l_c << endl;
+	cout << "Fitness high cap is: " << fit_high_cap << endl;
 	cout << "Seed for random number generator: " << seed << endl;
 	cout << "Number of Vose sampler updates in wi-host infection: " << nr_chunks << endl;
 	cout << "Using OpenMP parallel computing to treat hosts:" << parallel << endl; 
@@ -1294,6 +1296,8 @@ void host::evolve(mt19937 & gen, vector<vector<double> > tmat, vector<unsigned> 
 					//get a fitness
 					double f = V[str]->get_sequence()->get_fitness() + get_new_fitness(ind, SNPs_list, o_nt, subst, *(gens[omp_get_thread_num()]));
 					if (f < fit_low_cap) f = fit_low_cap;
+					//Do not allow for fitness to increase indefinitely
+					if (f > fit_high_cap) f = fit_high_cap;
 					//instantiate new sequence, strain classes and add a line to host::V.
 					new_str();
 					sequences * s0 = new sequences(sq, f, hs);
