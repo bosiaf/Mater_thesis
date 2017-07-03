@@ -1,6 +1,6 @@
 rm (list = ls())
 
-pa <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170623/"
+pa <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170630/"
 
 for (d in dir(pa, recursive = F))
 {
@@ -33,11 +33,12 @@ for (d in dir(pa, recursive = F))
 #    for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
 #  }
 #
-#  plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
+  plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
 #  for (e in 1:nr.ep) Parameters.Test(path = p, epidemics = e, threshold = 1.5e2)
-#  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = T)
-if (strsplit(d, split = "bp")[[1]][1] == "500")  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T, onlyHC = F)
-#  for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
+  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = F)
+#if (strsplit(d, split = "bp")[[1]][1] == "500")  
+  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T, onlyHC = F)
+  for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
 }
 
 

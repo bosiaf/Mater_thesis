@@ -20,7 +20,7 @@ personal::fit_low_cap, personal::fit_high_cap;
 vector<unsigned> personal::SNPs;
 vector<long int> personal::weight_not_snp;
 vector<double> personal::fit_not_snp;
-bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys, personal::parallel, personal::seq_print;
+bool personal::dic_fit_dep, personal::dv_fit_dep, personal::inf_fit_dep, personal::ad_imm_sys, personal::parallel, personal::seq_print, personal::seq_per_time;
 mt19937 personal::geng(42);
 mt19937 * genp;
 vector<mt19937*> personal::gens;
