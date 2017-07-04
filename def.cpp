@@ -8,6 +8,7 @@
 #include<fstream>
 #include<sstream>
 #include"header.hpp"
+#include<cstdlib>
 #include<random>
 #include<algorithm>
 #include<iterator>
@@ -605,7 +606,17 @@ void personal::read_pars(string file, unsigned & max_tstep, string & path_to_tma
 	sequ_in >> seq;
 	
 	sequ_in.close();
-	
+	//transform to uppercase if necessary
+	transform(seq.begin(), seq.end(), seq.begin(), ::toupper);
+	//Check for string validity (only ACGT characters)
+	string valid_chars ("ACGT");
+	found = seq.find_last_not_of(valid_chars);
+	if (found != string::npos)
+	{
+		cout << "Invalid initial sequence at position " << found << " !! Exiting program." << endl;
+		exit(EXIT_FAILURE);
+	}	
+
 	cout << "Initial sequence: " << seq << endl;
 
 
