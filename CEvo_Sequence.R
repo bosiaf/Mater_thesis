@@ -60,7 +60,15 @@ SampleAndConvert <- function(path_to_epi = "D:/Documents/ETH/Master/4Semester/Ma
     for (h in 0:(n.hosts - 1))
     {
       a <- grep(paste("host_", h , "_", sep = ""), list.files(path_to_seq))
-      fin <- read.table(paste(path_to_dyn, "host_", h, ".dat", sep = ""), header = T, sep = "\t")
+      if(file.exists(paste(path_to_dyn, "host_", h, ".dat", sep = "")))
+      {
+        fin <- read.table(paste(path_to_dyn, "host_", h, ".dat", sep = ""), header = T, sep = "\t")
+      }
+      else
+      {
+        cat(paste(path_to_dyn, "host_", h, ".dat NOT FOUND!", sep = ""))
+        return()
+      }
       tstep <- sample(fin[1,1]:fin[nrow(fin),1], 1)
       p <- fin[which(fin[,1] == tstep), 3]
       seqs <- read.table(paste(path_to_seq, "/host_", h, "_seq_time_", tstep, ".dat", sep = ""), header = T, sep = "\t")
@@ -276,19 +284,23 @@ CompareTrees <- function(path_to_ref = "D:/Documents/ETH/Master/4Semester/Master
 {
   if(suppressWarnings(!require(treespace))) install.packages("treespace")
   if(suppressWarnings(!require(ape))) install.packages("ape")
+  if(suppressWarnings(!require(treeman))) install.packages("treeman")
   library("ape")
   library("treespace")
-
-  path_to_epi <- paste(path_to_ref, "Epidemics_", epidemics, "/dyn/", sep = "")
-  path_out <- paste(path_to_ref, "Epidemics_", epidemics, "/", sep = "")
-  inputfile <- paste(path_to_ref, "Epidemics_", epidemics, "/dyn/Infection_history.dat", sep = "")
+  library("treeman")
+  path_to_seqs <- paste(path_to_ref, "/Epidemics_", epidemics, "/seq/", sep = "")
+  path_to_epi <- paste(path_to_ref, "/Epidemics_", epidemics, "/dyn/", sep = "")
+  path_out <- paste(path_to_ref, "/Epidemics_", epidemics, "/", sep = "")
+  inputfile <- paste(path_to_ref, "/Epidemics_", epidemics, "/dyn/Infection_history.dat", sep = "")
 
   if ( !("Infection_history.dat" %in% list.files(path_to_epi)) ) 
   {
     print ("No file found!")
     return()
   }
-  tmax <- as.numeric(readLines(paste(path_to_ref, "/Epidemics_", epidemics, "/parameters_cluster.dat", sep = ""))[2])
+  tmax <- as.numeric(unlist(strsplit(list.files(path_to_seqs)[length(list.files(path_to_seqs))], split = "[. _]"))[length(
+    unlist(strsplit(list.files(path_to_seqs)[length(list.files(path_to_seqs))], split = "[. _]"))
+  ) - 1])
   fin <- read.table(inputfile, header = T, sep = "\t")
   if (nrow(fin) == 0)
   {
@@ -361,9 +373,9 @@ CompareTrees <- function(path_to_ref = "D:/Documents/ETH/Master/4Semester/Master
   for (d in list.dirs(path_to_samples, recursive = F))
   {
     p <- paste(d, "/", sep = "")
-    MCC_Tree <- paste(p, list.files(p)[grep("*MCC.trees", list.files(p))], sep = "")
+    MCC_Tree <- paste(p, list.files(p)[grep("*MCC.tree*", list.files(p))], sep = "")
     Ref_tree <- genSmpldTree(path_to_ref = path_to_ref, path_to_samples = p, epidemics = epidemics)
-    if (gsub("//", "/", d) == list.dirs(path_to_samples, recursive = F)[1])
+    if (gsub("//", "/", d) == gsub("//", "/", list.dirs(path_to_samples, recursive = F)[1]))
     {
       output <- paste(readLines(MCC_Tree)[1:(length(readLines(MCC_Tree))-2)], collapse = "\n")
     }
@@ -377,15 +389,20 @@ CompareTrees <- function(path_to_ref = "D:/Documents/ETH/Master/4Semester/Master
   cat(output, file = paste(path_to_samples, "/Multitree_Epi_", epidemics, ".nexus", sep = ""))
   
   par(xpd = FALSE)
+  graphics.off()
   write.nexus(read.nexus(file = paste(path_to_samples, "/Multitree_Epi_", epidemics, ".nexus", sep = "")), 
               file = paste(path_to_samples, "/Multitree_parsed_Epi_", epidemics, ".nexus", sep = ""))
   MultTree <- read.nexus(file = paste(path_to_samples, "/Multitree_parsed_Epi_", epidemics, ".nexus", sep = ""))
-  pdf(paste(path_to_samples, "/Multitree.pdf", sep = ""))
-  for (i in 1:length(MultTree)) plot(MultTree[i], main = names(MultTree[i]))
-  dev.off()
   
+  for (i in 1:length(MultTree)) {
+    pdf(paste(path_to_samples, "/", names(MultTree[i]), ".pdf", sep = ""))
+    plot(MultTree[[i]], cex = 0.8)
+    dev.off()
+  }
+
   TS <- treespace(MultTree, nf = 2, method = dist_method)
   distMat <- as.matrix(TS$D)
+  write(t(distMat), file = paste(path_to_samples, "/DistMat_", dist_method, ".dat", sep = ""),  ncolumns = 1, sep = " ")
   TS_Table <- as.matrix(TS$pco$li)
   x_lim <- c(min(TS_Table[,1])-5, max(TS_Table[,1])+5)
   y_lim <- c(min(TS_Table[,2])-5, max(TS_Table[,2])+5)
@@ -422,7 +439,17 @@ CompareTrees <- function(path_to_ref = "D:/Documents/ETH/Master/4Semester/Master
   pdf(paste(path_to_samples, "/Dist_to_Ref.pdf", sep = ""))
   dists <- as.matrix(distMat)[length(MultTree),]
   i_ord <- factor(initials[order(dists)], levels = initials[order(dists)], ordered = T)
-  plot(i_ord, sort(dists), las = 1, xlab = "Sampling method", ylab = "Kendall Colijn Distance")
+  ind.noRef <- factor(initials[-length(initials)], ordered = T, levels = initials[-length(initials)])
+  plot(ind.noRef, dists[-length(MultTree)], las = 2, xlab = "", ylab = paste(dist_method, " Distance", sep = ""))
+  dev.off()
+  a <- as(MultTree, "TreeMen")
+  ma <- numeric(length(MultTree))
+  for (i in 1:length(MultTree)) ma[i] <- calcDstTrp(a[[i]], a[[length(MultTree)]], nrmlsd = T, progress = "text")
+      
+  write(t(ma), file = paste(path_to_samples, "/DistMat.dat", sep = ""),  ncolumns = 1, sep = " ")
+  write(initials, file = paste(path_to_samples, "/Labels.dat", sep = ""), ncolumns = 1, sep = " ")
+  pdf(paste(path_to_samples, "/Dist_to_Ref_Triplets.pdf", sep = ""))
+  plot(ind.noRef, ma[-length(ma)], las = 2, xlab = "", ylab = "Triplets Distance")
   dev.off()
 }
 
@@ -435,9 +462,9 @@ genSmpldTree <- function(path_to_ref = "D:/Documents/ETH/Master/4Semester/Master
   library("ape")
   library("treespace")
   
-  path_to_epi <- paste(path_to_ref, "Epidemics_", epidemics, "/dyn/", sep = "")
-  path_out <- paste(path_to_ref, "Epidemics_", epidemics, "/", sep = "")
-  inputfile <- paste(path_to_ref, "Epidemics_", epidemics, "/dyn/Infection_history.dat", sep = "")
+  path_to_epi <- paste(path_to_ref, "/Epidemics_", epidemics, "/dyn/", sep = "")
+  path_out <- paste(path_to_ref, "/Epidemics_", epidemics, "/", sep = "")
+  inputfile <- paste(path_to_ref, "/Epidemics_", epidemics, "/dyn/Infection_history.dat", sep = "")
   InfHis <- read.table(inputfile, header = T, sep = "\t")
   #tips = sampling times
   tips <- read.table(paste(path_to_samples, list.files(path_to_samples)[grep("times", list.files(path_to_samples))], sep = ""))
@@ -521,4 +548,71 @@ genSmpldTree <- function(path_to_ref = "D:/Documents/ETH/Master/4Semester/Master
   NewickTree_ref2 <- paste("tree ", lab, "_ref = ", NewickTree_ref, sep = "")
   
   return (NewickTree_ref2)
+}
+
+
+All.Compare <- function(path_to_samples = "C:/Users/iotn_/Desktop/Toy_Bayesian/20170719/")
+{
+  if(!require("RColorBrewer"))install.packages("RColorBrewer")
+  library(RColorBrewer)
+  lstdrs <- list.dirs(path_to_samples, recursive = F)
+  len <- length(readLines(paste(lstdrs[1], "/DistMat.dat", sep = "")))
+  initials <- as.character(unlist(read.table(file = paste(lstdrs[1], "/Labels.dat", sep = ""))))
+  fini <- factor(initials[-len], levels = initials[-len])
+  
+  #compare with triplet distance
+  m <- matrix(0, ncol = length(lstdrs), nrow = len)
+  for (i in 1:length(lstdrs))
+  {
+    m[,i] <- unlist(read.table(paste(lstdrs[i], "/DistMat.dat", sep = "")))
+  }
+  
+  ##Compare with other distance measures
+  m_tV <- matrix(0, ncol = length(lstdrs), nrow = len)
+  m_RF <- matrix(0, ncol = length(lstdrs), nrow = len)
+  for (i in 1:length(lstdrs)){
+    MultTree <- read.nexus(file = paste(lstdrs[i], list.files(lstdrs[i])[grep("Multitree_parsed_Epi_", list.files(lstdrs[i]))], sep = "/"))
+    TS_treeVec <- treespace(MultTree, nf = 2, method = "treeVec")
+    TS_RF <- treespace(MultTree, nf = 2, method = "RF")
+    distMat_treeVec <- as.matrix(TS_treeVec$D)[,len]
+    distMat_RF <- as.matrix(TS_RF$D)[,len]
+    m_tV[,i] <- distMat_treeVec
+    m_RF[,i] <- distMat_RF
+  }
+  graphics.off()
+  pal <- brewer.pal(8, name = "Dark2")
+  pdf(file = paste(path_to_samples, "/gathered_Kendall_Colijn.pdf", sep = ""))
+  boxplot(t(m_tV[-len,]), las = 2, ylab = "Kendall Colijn distance", xlab = "", xaxt = "n",
+          col = rep(pal, each = 2))
+  axis(1, at = 1:16, labels = fini, las = 2)
+  dev.off()
+  pdf(file = paste(path_to_samples, "/gathered_Robinson_Foulds.pdf", sep = ""))
+  boxplot(t(m_RF[-len,]), las = 2, ylab = "Robinson Foulds distance", xlab = "", xaxt = "n",
+          col = rep(pal, each = 2))
+  axis(1, at = 1:16, labels = fini, las = 2)
+  dev.off()
+  pdf(file = paste(path_to_samples, "/gathered_Triplets.pdf", sep = ""))
+  boxplot(t(m[-len,]), las = 2, ylab = "Triplets distance", xlab = "", xaxt = "n",
+          col = rep(pal, each = 2))
+  axis(1, at = 1:16, labels = fini, las = 2)
+  dev.off()
+  
+  #Compare difference between reference and reconstructed trees
+  w <- (1:8)*2
+  refs <- (1:8)*2-1
+  ref_tV <- m_tV[refs,]
+  ref_RF <- m_RF[refs,]
+  ref_Trp <- m[refs,]
+  w_tV <- m_tV[w,]
+  w_RF <- m_RF[w,]
+  w_Trp <- m[w,]
+  tV_t <- t.test(ref_tV, w_tV, var.equal = F, alternative = "two.sided", paired = F)
+  RF_t <- t.test(ref_RF, w_RF, var.equal = F, alternative = "two.sided", paired = F)
+  Trp_t <- t.test(ref_Trp, w_Trp, var.equal = F, alternative = "two.sided", paired = F)
+  outp <- c(tV_t$estimate[1],tV_t$estimate[2], tV_t$statistic, tV_t$parameter, tV_t$p.value)
+  outp <- rbind(outp, c(RF_t$estimate[1],RF_t$estimate[2],RF_t$statistic,RF_t$parameter, RF_t$p.value))
+  outp <- rbind(outp, c(Trp_t$estimate[1],Trp_t$estimate[2],Trp_t$statistic,Trp_t$parameter, Trp_t$p.value))
+  rownames(outp) <- c("treeVec", "RF", "Triples")
+  colnames(outp) <- c("mean(reconstructed)", "mean(Refs)", "t statistic", "Degrees of freedom", "p.value")
+  print(outp)
 }

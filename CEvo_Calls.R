@@ -13,7 +13,8 @@ source(paste("D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Dynamics_
 source(paste("D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Dynamics_test/CEvo_Sequence.R", sep = ""))
 
 #Mother folder for a whole daily session (*/Output/Euler/20170711/)
-pa <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170712/"
+
+pa <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170816/"
 #Path for finding the infection chain file (*/20170710/1000bp_5SNP_04Malus_seqReal_ImSys005_HighCap2/)
 p <- list.dirs(pa, recursive = F)[1]
 #p <- paste(pa, "/1000bpRS_5SNP_02Malus_ImSys001_HighCap_LowEvoRate/", sep = "")
@@ -21,7 +22,9 @@ p <- list.dirs(pa, recursive = F)[1]
 #Epidemics folder for the analysis of the sequences (*/SOME_NAME/Epidemics_1/)
 pas <- paste(p, "/Epidemics_1/", sep = "")
 #mother directory of the sample trees (before, after, infection, random) directories after BEAST analysis
-pts <- "C:/Users/iotn_/Desktop/Toy_Bayesian/20170711_HighCap_LowEvo/Epi_2"
+mother_pts <- "C:/Users/iotn_/Desktop/Toy_Bayesian/20170816/"
+ptss <- list.dirs(mother_pts, recursive = F)
+pts <- "C:/Users/iotn_/Desktop/Toy_Bayesian/20170721_LowAndHigh_1/Epidemics_3"
 ptss <- paste(pts, "/Random_100Strains/", sep = "")
 
 
@@ -51,15 +54,45 @@ for (d in dir(pa, recursive = F))
   
   
   
-  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = F)
-  #for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T, onlyHC = F)
-  for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
+  for (e in 1:3) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = F)
+  for (e in 1:3) plot.ViralLoad(path = p, epidemics = e, per_vir = T, onlyHC = F)
+  for (e in 1:3) plot.InfTree(path = p, epidemics = e)
 }
 #This to generate the multiple alignment and times of sampling
-SampleAndConvert(path_to_epi = pas, which = "random", howMuchTime = 30, HowManyStrains = 100)
-SampleAndConvert(path_to_epi = pas, which = "infection", howMuchTime = 30, HowManyStrains = 100)
-SampleAndConvert(path_to_epi = pas, which = "transmitted", howMuchTime = 30, HowManyStrains = 100)
-SampleAndConvert(path_to_epi = pas, which = "tips", howMuchTime = 30, HowManyStrains = 100)
+for (d in dir(pa, recursive = F))
+{
+  p <- paste(pa, "/", d, "/", sep = "")
+  nr.ep <- length(list.dirs(p, recursive = F))
+  
+  for (e in 1:nr.ep)
+  {
+    pas <- paste(p, "/Epidemics_", e, "/", sep = "")
+    SampleAndConvert(path_to_epi = pas, which = "random", howMuchTime = 50, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "infection", howMuchTime = 50, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "transmitted", howMuchTime = 50, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "tips", howMuchTime = 50, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "after", howMuchTime = 30, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "after", howMuchTime = 60, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "before", howMuchTime = 30, HowManyStrains = 100)
+    cat("DONE\n")
+    SampleAndConvert(path_to_epi = pas, which = "before", howMuchTime = 60, HowManyStrains = 100)
+    cat("DONE\n")
+  }
+  
+}
 
 #This to do after BEAST analysis
-CompareTrees(path_to_ref = p, path_to_samples = pts, epidemics = 2, dist_method = "treeVec")
+for (i in 1:7)
+{
+  p <- list.dirs(pa, recursive = F)[i]
+  pts <- ptss[i]
+  CompareTrees(path_to_ref = p, path_to_samples = pts, epidemics = 1, dist_method = "treeVec")
+}
+All.Compare(path_to_samples = mother_pts)
+

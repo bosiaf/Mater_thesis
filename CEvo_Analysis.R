@@ -189,7 +189,7 @@ plot.InfTree <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis
 
   plot (treegraph)
   elem_mat <- (dim(fin)[1] + 1)
-  elemchain <- list()
+  chain <- list()
   times <- numeric(elem_mat)
   for (i in 1:elem_mat) chain[[i]] <- as.character(i)
   for (i in 1:elem_mat) times[i] <- tmax + 1
