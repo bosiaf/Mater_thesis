@@ -1,49 +1,3 @@
-rm (list = ls())
-
-pa <- "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170630/"
-
-for (d in dir(pa, recursive = F))
-{
-  p <- paste(pa, "/", d, "/", sep = "")
-  par_file <- paste(p, "parameter_search.sh", sep = "")
-  nr.ep <- length(list.dirs(p, recursive = F))
-  
-  
-  #read parameters
-  
-  #get Infection rate constant line and parse it
-  irc <- readLines(par_file)[3]
-  irc <- strsplit(irc, split = '[\\(\\)]')[[1]][2]
-  irc_label <- strsplit(irc, split = " ")[[1]]
-  irc <- as.numeric(strsplit(irc, split = " ")[[1]])
-  
-  #get fitness and parse it
-  fitness <- readLines(par_file)[4]
-  fitness <- strsplit(fitness, split = '[\\(\\)]')[[1]][2]
-  fitness_label <- strsplit(fitness, split = " ")[[1]]
-  fitness <- as.numeric(strsplit(fitness, split = " ")[[1]])
-  
-  #End of parameter reading
-  
-  
-#  if (strsplit(d, split = "bp")[[1]][1] == "500")
-#  {
-#    plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
-#    for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = T)
-#    for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
-#  }
-#
-  plot.Parmap(path = p, just.adimsys = F, inf = irc, fit = fitness, nr.ep, threshold = 1.5e2)
-#  for (e in 1:nr.ep) Parameters.Test(path = p, epidemics = e, threshold = 1.5e2)
-  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = F, onlyHC = F)
-#if (strsplit(d, split = "bp")[[1]][1] == "500")  
-  for (e in 1:nr.ep) plot.ViralLoad(path = p, epidemics = e, per_vir = T, onlyHC = F)
-  for (e in 1:nr.ep) plot.InfTree(path = p, epidemics = e)
-}
-
-
-
-
 plot.ViralLoad <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/"
                            , epidemics = 1, per_vir = T, onlyHC = T){
   
@@ -195,10 +149,10 @@ plot.Density <- function(path = "C:\\Users\\Francesco\\Desktop\\ReconstHIV\\fran
 
 plot.InfTree <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis/New_Proj/Output/Euler/20170517_2/", epidemics = 1)
 {
-  if(suppressWarnings(!require(treescape))) install.packages("treescape")
+  if(suppressWarnings(!require(treescape))) install.packages("treespace")
   if(suppressWarnings(!require(igraph))) install.packages("igraph")
   if(suppressWarnings(!require(ape))) install.packages("ape")
-  library("treescape")
+  library("treespace")
   library("igraph")
   library("ape")
   
@@ -238,7 +192,7 @@ plot.InfTree <- function(path = "D:/Documents/ETH/Master/4Semester/Master_thesis
   chain <- list()
   times <- numeric(elem_mat)
   for (i in 1:elem_mat) chain[[i]] <- as.character(i)
-  for (i in 1:elem_mat) times[i] <- 401
+  for (i in 1:elem_mat) times[i] <- tmax + 1
   iter <- elem_mat-1
   inf <- fin_corr[,2]
   infd <- fin_corr[,3]
