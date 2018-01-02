@@ -73,4 +73,31 @@ double rtp(T rate, C t = 1.)
 }
 
 
+int nt_to_i (char nt)
+{
+  if (nt == 'A') return 0;
+  else if (nt == 'G') return 1;
+  else if (nt == 'C') return 2;
+  else if (nt == 'T') return 3;
+  else
+  {
+    cout << "Only nucelotides supported are A, G, C, T" << endl;
+    cout << "Found " << nt << "." << endl;
+    return -1;
+  }
+}
+
+//takes a double transition matrix, a random number and an old nucleotide and
+//gives a new nucleotide.
+//TODO:
+//tmat hardcoding
+//cszums hardcoded
+//end evo_nt code
+char evo_nt (vector<vector<double> > tmat, double ran_nr, char old_nt)
+{
+  char result = '';
+  int nt = nt_to_i(old_nt);
+  double csum[4];
+}
+
 #endif

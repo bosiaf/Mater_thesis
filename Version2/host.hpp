@@ -26,6 +26,7 @@ namespace epi
       count_t get_nr_strains() const
       { return nr_strains; }//returns the number of strains in the host
 
+      //TODO
       //methods to propagate time
       bool wi_host_dyn_std();//dynamics according to basic viral model
       bool wi_host_dyn_lat();//dynamics according to a latent cell viral dynamics
@@ -48,6 +49,7 @@ namespace epi
       {
         iter_swap(V.begin() + index, V.back());
         V.pop_back();
+        --nr_strains;
       }
 
       count_t healthy_cells;
@@ -57,9 +59,17 @@ namespace epi
       : ID(total_hosts++), healthy_cells(hc), V(A),
       nr_strains(A.size()), time(epi_time) 
       {}
-      
+
+      //destructor
+      ~host()
+      {
+        V.clear();
+#ifdef NDEBUG
+        cout << "V has been cleared? " << V.empty() << endl;
+#endif
+      }
+ 
     private:
-      //Create a vector containing all the strains in a host
       count_t nr_strains; //number of strains in the host
       const count_t ID; //ID of the host
       const unsigned time; //time of infection
