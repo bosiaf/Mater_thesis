@@ -3,6 +3,7 @@
 #include<iostream>
 #include<string>
 #include<vector>
+#include<cmath>
 
 template <class T>
 istream& operator>>(istream& fin, vector<T> & row)
@@ -63,5 +64,13 @@ istream& operator>><vector<double> > (istream& fin, vector< vector<> > & table)
   //return new input
   return fin;
 }
+
+
+template<class T, class C>
+double rtp(T rate, C t = 1.)
+{
+  return double(1 - exp(-t * rate));
+}
+
 
 #endif

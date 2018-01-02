@@ -11,37 +11,51 @@ namespace epi
   struct par
   {
     const string path_to_tmat, path_output_dyn, path_output_seq, seq;
-    const unsigned max_tstep, vol, v0, h0, hc_ren, b_size, seed, nr_chunks;
+    const unsigned max_tstep, v0, h0, hc_ren, b_size, seed, nr_chunks;
     const vector<unsigned> SNPs, weight_not_snp;
     const vector<double> fit_not_snp;
-    const double dhc, dic, dv, kinf, sdf, kbtw, kmut, fit_snp, k_fit,
+    const double vol, dhc, dic, dv, kinf, sdf, kbtw, kmut, fit_snp, k_fit,
                  fit_change, fit_low_cap, fit_high_cap;
-  
+    const bool dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys, parallel,
+               seq_print, seq_per_time;
+    void print_par() const;
     //copy constructor by compiler
-    parameters(const string p_tmat, p_out_dyn, p_out_seq, s0,
-               const unsigned MAX_TSTEP, VOL, V0, H0, HC_REN, B_SIZE, SEED, NR_CHUNKS,
-               const vector<unsigned> SNPs, weight_not_snp,
+    par(const string p_tmat, const string p_out_dyn, const string p_out_seq, 
+               const string s0, const unsigned max_tstep, const unsigned v0, 
+               const unsigned h0, const unsigned hc_ren, const unsigned b_size, 
+               const unsigned seed, const unsigned nr_chunks,
+               const vector<unsigned> SNPs, const vector<unsigned> weight_not_snp,
                const vector<double> fit_not_snp,
-               const double DHC, DIC, DV, KINF, SDF, KBTW, KMUT, FIT_SNP, K_FIT,
-                            FIT_CHANGE, FIT_LOW_CAP, FIT_HIGH_CAP)
+               const double vol, const double dhc, const double dic, const double dv, 
+               const double kinf, const double sdf, const double kbtw, 
+               const double kmut, const double fit_snp, const double k_fit,
+               const double fit_change, const double fit_low_cap,
+               const double fit_high_cap, const bool dic_fit_dep,
+               const bool dv_fit_dep, const bool inf_fit_dep, 
+               const bool ad_imm_sys, const bool parallel, const bool seq_per_time,
+               const bool seq_print)
               : path_to_tmat(p_tmat),
                 path_output_dyn(p_out_dyn),
                 path_output_seq(p_out_seq),
                 seq(s0),
-                max_tstep(MAX_TSTEP),
-                vol(VOL), v0(V0), h0(H0), hc_ren(HC_REN),
-                b_size(B_SIZE), seed(SEED), nr_chunks(NR_CHUNKS),
+                max_tstep(max_tstep),
+                vol(vol), v0(v0), h0(h0), hc_ren(hc_ren),
+                b_size(b_size), seed(seed), nr_chunks(nr_chunks),
                 SNPs(SNPs), weight_not_snp(weight_not_snp),
                 fit_not_snp(fit_not_snp), 
-                dhc(DHC), dic(DIC), dv(DV), kinf(KINF), sdf(SDF),
-                kbtw(KBTW), kmut(KMUT), fit_snp(FIT_SNP), kfit(KFIT),
-                fit_change(FIT_CHANGE), fit_low_cap(FIT_LOW_CAP),
-                fit_high_cap(FIT_HIGH_CAP)
+                dhc(dhc), dic(dic), dv(dv), kinf(kinf), sdf(sdf),
+                kbtw(kbtw), kmut(kmut), fit_snp(fit_snp), k_fit(k_fit),
+                fit_change(fit_change), fit_low_cap(fit_low_cap),
+                fit_high_cap(fit_high_cap),
+                dic_fit_dep(dic_fit_dep), dv_fit_dep(dv_fit_dep),
+                inf_fit_dep(inf_fit_dep), ad_imm_sys(ad_imm_sys),
+                parallel(parallel), seq_per_time(seq_per_time),
+                seq_print(seq_print)
     { }
 
   };
   
-  par read_pars(const string file);
+  const par read_pars(const string file);
 }
 
 #endif

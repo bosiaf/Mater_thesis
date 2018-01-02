@@ -3,3 +3,6 @@
 *.o
 *.sln
 *.vcxpro*
+*.swp
+*.swo
+*.out
