@@ -22,7 +22,8 @@ namespace epi
 
 
       epidemics(vector<*host> h)
-      : epi_time(0), h_vec(h)
+      : epi_time(0), h_vec(h), is_over(false), 
+        host_nr(h.size())
       {}
       //Create a vector containing all the strains in a host
       
@@ -34,7 +35,8 @@ namespace epi
 #endif
       }
     private:
-      
+     bool is_over; 
+     unsigned host_nr;
 
   };
   
