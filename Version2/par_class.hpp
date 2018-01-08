@@ -14,11 +14,11 @@ namespace epi
     const unsigned max_tstep, v0, h0, hc_ren, b_size, seed, nr_chunks;
     const vector<unsigned> SNPs, weight_not_snp;
     const vector<double> fit_not_snp;
-    const double vol, dhc, dic, dv, kinf, sdf, kbtw, kmut, fit_snp, k_fit,
-                 fit_change, fit_low_cap, fit_high_cap,
-                 dl, inf_to_lat, lat_act;
+    const double vol, dhc, dic, dv, kinf, sdf, dl, inf_to_lat, lat_act, 
+                 kbtw, kmut, fit_snp, k_fit,
+                 fit_change, fit_low_cap, fit_high_cap;
     const bool dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys, parallel,
-               seq_print, seq_per_time;
+               seq_per_time, seq_print;
     void print_par() const;
     //copy constructor by compiler
     par(const string p_out_dyn, const string p_out_seq, const string s0, 
@@ -40,12 +40,12 @@ namespace epi
                 path_output_seq(p_out_seq),
                 seq(s0),
                 max_tstep(max_tstep),
-                vol(vol), v0(v0), h0(h0), hc_ren(hc_ren),
+                v0(v0), h0(h0), hc_ren(hc_ren),
                 b_size(b_size), seed(seed), nr_chunks(nr_chunks),
                 SNPs(SNPs), weight_not_snp(weight_not_snp),
-                fit_not_snp(fit_not_snp), 
+                fit_not_snp(fit_not_snp), vol(vol), 
                 dhc(dhc), dic(dic), dv(dv), kinf(kinf), sdf(sdf),
-                dl(dl), inf_to_act(inf_to_lat), lat_act(lat_act),
+                dl(dl), inf_to_lat(inf_to_lat), lat_act(lat_act),
                 kbtw(kbtw), kmut(kmut), fit_snp(fit_snp), k_fit(k_fit),
                 fit_change(fit_change), fit_low_cap(fit_low_cap),
                 fit_high_cap(fit_high_cap),
