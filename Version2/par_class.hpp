@@ -15,18 +15,20 @@ namespace epi
     const vector<unsigned> SNPs, weight_not_snp;
     const vector<double> fit_not_snp;
     const double vol, dhc, dic, dv, kinf, sdf, kbtw, kmut, fit_snp, k_fit,
-                 fit_change, fit_low_cap, fit_high_cap;
+                 fit_change, fit_low_cap, fit_high_cap,
+                 dl, inf_to_lat, lat_act;
     const bool dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys, parallel,
                seq_print, seq_per_time;
     void print_par() const;
     //copy constructor by compiler
-    par(const string p_tmat, const string p_out_dyn, const string p_out_seq, 
-               const string s0, const unsigned max_tstep, const unsigned v0, 
+    par(const string p_out_dyn, const string p_out_seq, const string s0, 
+               const unsigned max_tstep, const unsigned v0, 
                const unsigned h0, const unsigned hc_ren, const unsigned b_size, 
                const unsigned seed, const unsigned nr_chunks,
                const vector<unsigned> SNPs, const vector<unsigned> weight_not_snp,
                const vector<double> fit_not_snp,
-               const double vol, const double dhc, const double dic, const double dv, 
+               const double vol, const double dhc, const double dic, const double dv,
+               const double dl, const double inf_to_lat, const double lat_act, 
                const double kinf, const double sdf, const double kbtw, 
                const double kmut, const double fit_snp, const double k_fit,
                const double fit_change, const double fit_low_cap,
@@ -34,8 +36,7 @@ namespace epi
                const bool dv_fit_dep, const bool inf_fit_dep, 
                const bool ad_imm_sys, const bool parallel, const bool seq_per_time,
                const bool seq_print)
-              : path_to_tmat(p_tmat),
-                path_output_dyn(p_out_dyn),
+              : path_output_dyn(p_out_dyn),
                 path_output_seq(p_out_seq),
                 seq(s0),
                 max_tstep(max_tstep),
@@ -44,6 +45,7 @@ namespace epi
                 SNPs(SNPs), weight_not_snp(weight_not_snp),
                 fit_not_snp(fit_not_snp), 
                 dhc(dhc), dic(dic), dv(dv), kinf(kinf), sdf(sdf),
+                dl(dl), inf_to_act(inf_to_lat), lat_act(lat_act),
                 kbtw(kbtw), kmut(kmut), fit_snp(fit_snp), k_fit(k_fit),
                 fit_change(fit_change), fit_low_cap(fit_low_cap),
                 fit_high_cap(fit_high_cap),

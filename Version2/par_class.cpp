@@ -46,8 +46,9 @@ const epi::par epi::read_pars(const string filename)
   b_size = 0, seed = 0, nr_chunks = 0;
   vector<unsigned> SNPs, weight_not_snp;
   vector<double> fit_not_snp;
-  double vol = 0., dhc = 0., dic = 0., dv = 0., kinf = 0., sdf = 0., kbtw = 0.,
-  kmut = 0., fit_snp = 0., k_fit = 0., fit_change = 0., fit_low_cap = 0.,
+  double vol = 0., dhc = 0., dic = 0., dl = 0., dv = 0., kinf = 0., 
+  inf_to_lat = 0., sdf = 0., kbtw = 0., lat_act = 0., kmut = 0., 
+  fit_snp = 0., k_fit = 0., fit_change = 0., fit_low_cap = 0.,
   fit_high_cap = 0.;
   bool dic_fit_dep = false, dv_fit_dep = false, inf_fit_dep = false,
        ad_imm_sys = false, parallel = false, seq_per_time = false,
@@ -62,8 +63,8 @@ const epi::par epi::read_pars(const string filename)
 
   getline(inp, s);
   max_tstep = stoul(s);
-
-  getline(inp, path_to_tmat);
+ //Transition matrix is now hardcoded
+ // getline(inp, path_to_tmat);
   getline(inp, path_output_dyn);
   getline(inp, path_output_seq);
   getline(inp, seq_in);
@@ -87,6 +88,9 @@ const epi::par epi::read_pars(const string filename)
   dic = stod(s);
 
   getline(inp, s);
+  dl = stod(s);
+
+  getline(inp, s);
   b_size = stoul(s);
 
   getline(inp, s);
@@ -94,6 +98,12 @@ const epi::par epi::read_pars(const string filename)
 
   getline(inp, s);
   kinf = stod(s);
+
+  getline(inp, s);
+  inf_to_lat = stod(s);
+
+  getline(inp, s);
+  lat_act = stod(s);
 
   getline(inp, s);
   sdf = stod(s);
@@ -209,6 +219,11 @@ const epi::par epi::read_pars(const string filename)
   {
     cout << "Sequence was accepted." << endl;
   }
+
+  //Now transform the constants with the volume
+  h0 *= vol;
+  hc_ren *= vol;
+  kinf /= vol;
 
   const par a(path_to_tmat, path_output_dyn, path_output_seq,
                      seq, max_tstep, v0, h0, hc_ren, b_size, seed,
