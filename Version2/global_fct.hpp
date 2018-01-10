@@ -67,37 +67,33 @@ istream& operator>><vector<double> > (istream& fin, vector< vector<> > & table)
 
 
 template<class T, class C>
-double rtp(T rate, C t = 1.)
+double rtp(const T rate, const C t = 1.)
 {
   return double(1 - exp(-t * rate));
 }
 
 
-int nt_to_i (char nt)
-{
-  if (nt == 'A') return 0;
-  else if (nt == 'G') return 1;
-  else if (nt == 'C') return 2;
-  else if (nt == 'T') return 3;
-  else
-  {
-    cout << "Only nucelotides supported are A, G, C, T" << endl;
-    cout << "Found " << nt << "." << endl;
-    return -1;
-  }
-}
+int nt_to_i (const char nt);
+char i_to_n (const int nt);
 
 //takes a double transition matrix, a random number and an old nucleotide and
 //gives a new nucleotide.
-//TODO:
-//tmat hardcoding
-//cszums hardcoded
-//end evo_nt code
-char evo_nt (vector<vector<double> > tmat, double ran_nr, char old_nt)
+template<class TM>
+char evo_nt (const TM tmat, const double ran_nr, const char old_nt)
 {
   char result = '';
   int nt = nt_to_i(old_nt);
-  double csum[4];
+  int new_nt = 0;
+  for (unsigned i = 0; i < 4; ++i)
+  {
+    if (random_nr < csum[i])
+    {
+      new_nt = i;
+      break;
+    }
+  }
+  
+  return i_to_nt(new_nt);
 }
 
 #endif
