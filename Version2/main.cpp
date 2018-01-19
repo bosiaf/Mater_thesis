@@ -19,6 +19,8 @@ int main(int argc, char * argv[])
   
   const par a = read_pars(parameter);
 
+  //Random number generator
+  mt19937 rng(a.seed);
 
   return 0;
 }

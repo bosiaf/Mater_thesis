@@ -1,6 +1,9 @@
 #ifndef EPIDEMICS_HPP
 #define EPIDEMICS_HPP
 #include<iostream>
+#include<array>
+#include<vector>
+#include<random>
 
 
 using namespace std;
@@ -10,6 +13,7 @@ namespace epi
   class epidemics
   {
     public:
+
       static bool is_over;//bool to see if the simulation is over
       static unsigned epi_time;//the global simulation time
       vector<*host> h_vec; //vector collecting all the infected hosts

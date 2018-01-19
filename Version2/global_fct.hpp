@@ -96,4 +96,13 @@ char evo_nt (const TM tmat, const double ran_nr, const char old_nt)
   return i_to_nt(new_nt);
 }
 
+
+//Vose sampler
+void Vose_smpl_init(vector<double> & p, vector<double> & probs, 
+                    vector<int> & alias, const unsigned size);
+unsigned Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias, 
+                    unsigned size, const vector<unsigned> & not_empty, 
+                    mt19937 & gen, uniform_real_distribution<> & d);
+
+
 #endif
