@@ -15,9 +15,8 @@ namespace epi
     const vector<unsigned> SNPs, weight_not_snp;
     const vector<double> fit_not_snp;
     const double vol, dhc, dic, dv, kinf, sdf, dl, inf_to_lat, lat_act, 
-                 kbtw, kmut, fit_snp, k_fit,
-                 fit_change, fit_low_cap, fit_high_cap;
-    const bool dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys, parallel,
+                 kbtw, kmut, fit_snp, fit_change, fit_low_cap, fit_high_cap;
+    const bool dic_fit_dep, dv_fit_dep, burst_fit_dep, inf_fit_dep, ad_imm_sys, parallel,
                seq_per_time, seq_print;
     void print_par() const;
     //copy constructor by compiler
@@ -30,10 +29,10 @@ namespace epi
                const double vol, const double dhc, const double dic, const double dv,
                const double dl, const double inf_to_lat, const double lat_act, 
                const double kinf, const double sdf, const double kbtw, 
-               const double kmut, const double fit_snp, const double k_fit,
+               const double kmut, const double fit_snp,
                const double fit_change, const double fit_low_cap,
                const double fit_high_cap, const bool dic_fit_dep,
-               const bool dv_fit_dep, const bool inf_fit_dep, 
+               const bool dv_fit_dep, const bool burst_fit_dep, const bool inf_fit_dep, 
                const bool ad_imm_sys, const bool parallel, const bool seq_per_time,
                const bool seq_print)
               : path_output_dyn(p_out_dyn),
@@ -48,8 +47,8 @@ namespace epi
                 dl(dl), inf_to_lat(inf_to_lat), lat_act(lat_act),
                 kbtw(kbtw), kmut(kmut), fit_snp(fit_snp), k_fit(k_fit),
                 fit_change(fit_change), fit_low_cap(fit_low_cap),
-                fit_high_cap(fit_high_cap),
-                dic_fit_dep(dic_fit_dep), dv_fit_dep(dv_fit_dep),
+                fit_high_cap(fit_high_cap), dic_fit_dep(dic_fit_dep), 
+                dv_fit_dep(dv_fit_dep), burst_fit_dep(burst_fit_dep),
                 inf_fit_dep(inf_fit_dep), ad_imm_sys(ad_imm_sys),
                 parallel(parallel), seq_per_time(seq_per_time),
                 seq_print(seq_print)

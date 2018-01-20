@@ -34,7 +34,7 @@ char i_to_nt (const int nt)
 
 //Vose sampler
 void Vose_smpl_init(vector<double> & p, vector<double> & probs, 
-                    vector<int> & alias, const unsigned size)
+                    vector<unsigned> & alias, const unsigned size)
 {
   unsigned l = 0, s = 0;
   vector<unsigned> large(size);

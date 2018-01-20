@@ -48,11 +48,11 @@ const epi::par epi::read_pars(const string filename)
   vector<double> fit_not_snp;
   double vol = 0., dhc = 0., dic = 0., dv = 0., dl = 0.,  
   kinf = 0., sdf = 0., kbtw = 0., inf_to_lat = 0., lat_act = 0.,
-  kmut = 0., fit_snp = 0., k_fit = 0., fit_change = 0., fit_low_cap = 0.,
+  kmut = 0., fit_snp = 0., fit_change = 0., fit_low_cap = 0.,
   fit_high_cap = 0.;
-  bool dic_fit_dep = false, dv_fit_dep = false, inf_fit_dep = false,
-       ad_imm_sys = false, parallel = false, seq_per_time = false,
-       seq_print = false;
+  bool dic_fit_dep = false, dv_fit_dep = false, burst_fit_dep = false, 
+       inf_fit_dep = false, ad_imm_sys = false, parallel = false, 
+       seq_per_time = false, seq_print = false;
   
   //print that you're about to read in the parameters
   cout << string(50, '*') << endl;
@@ -125,9 +125,9 @@ const epi::par epi::read_pars(const string filename)
   getline(inp, s);
   dv_fit_dep = stoi(s);
   getline(inp, s);
-  inf_fit_dep = stoi(s);
+  burst_fit_dep = stoi(s);
   getline(inp, s);
-  k_fit = stod(s);
+  inf_fit_dep = stoi(s);
   getline(inp, s);
   ad_imm_sys = stoi(s);
   getline(inp, s);
