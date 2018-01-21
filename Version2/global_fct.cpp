@@ -108,4 +108,5 @@ unsigned Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias
   }
 }
 
+//RANDOM DISTRIBUTIONS
 

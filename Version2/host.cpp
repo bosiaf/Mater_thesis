@@ -4,16 +4,16 @@
 #include"host.hpp"
 
 
-bool wi_host_dyn_std(mt19937 & rng, const epi::par * par)
+bool wi_host_dyn_std(mt19937 & rng, const epi::par & par)
 {
   bool result = false;
-  bool outcome = false;
   double prob = 0.0;
   const count_t nstr = nr_strains;
   vector<count_t> weight(nstr);
   vector<double> w_norm(nstr);
   vector<double> fit(nstr);
   vector<double> fi_vi(nstr);
+  vector<count_c> to_elim;
 
   double expk = exp(par.kinf);
 
@@ -114,14 +114,87 @@ bool wi_host_dyn_std(mt19937 & rng, const epi::par * par)
   double icomp = static_cast<double>(tot_c)/par.h0;
   
   //Loop over strains to propagate dynamics
+
+  //precalculate mean burst of a single strain
+  vector<double> b_norm = rnorm<double>(nstr, par.b_size, par.b_size/4, rng)
+  //precalculate mean removal of
+
   for (count_t i = 0; i < nstr; ++i)
   {
+    //check that burst is not negative
+    if (b_norm[i] <= 0) b_norm[i] = 0;
+
     count_t norm_burst = 0;
 
-    //LEFT HERE!!!!
-    
-    
+    //BURST SIZE
+    if (V[i]->inf_cell)//calculate just if there are infected cells
+    {
+      //calculate burst with or without fitness dependency
+      if (par.burst_fit_dep)
+      {
+        norm_burst = static_cast<count_t>(b_norm[i]*fit[i]*V[i]->inf_cell);
+      }
+      else
+      {
+        norm_burst = static_cast<count_t>(b_norm[i]*V[i]->inf_cell);
+      }
+    }
+    //INFECTED CELLS REMOVAL
+    //VIRIONS REMOVAL
+    if (par.ad_im_sys)
+    {
+      if (par.dic_fit_dep)
+      {
+        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic*icomp/fit[i]), rng);
+      }
+      else
+      {
+        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic*icomp), rng); 
+      }
+      if (par.dv_fit_dep)
+      {
+        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv*icomp/fit[i]), rng);
+      }
+      else
+      {
+        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv*icomp), rng);
+      }
+    }
+    else
+    {   
+      if (par.dic_fit_dep)
+      {
+        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic/fit[i]), rng);
+      }
+      else
+      {
+        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic), rng); 
+      }
+      if (par.dv_fit_dep)
+      {
+        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv/fit[i]), rng);
+      }
+      else 
+      {
+        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv), rng);
+      }
+    }   
+    //spawn new virions
+    V[i]->vir += norm_burst;
+
+    //if there are no virions and infected cells of a strain,
+    //eliminate that strain
+    if (!(V[i]->vir && V[i]->inf_cell)) to_elim.push_back(i);
+    else result = true;
   }
+  for (unsigned i = to_elim.size(); i > 0; --i) delete_strain(to_elim[i-1]);
+
+  //HEALTHY CELLS
+  healthy_cells -= rbinom(healthy_cells, rtp(par.dhc), rng);
+  healthy_cells += floor(rnorm(hc_renew + 0.5, hc_renew/5.0, rng);
+
+  //returns 0 if no viable strain is present
+  return result;
 }
 
 

@@ -66,8 +66,8 @@ istream& operator>><vector<double> > (istream& fin, vector< vector<> > & table)
 }
 
 
-template<class T, class C>
-double rtp(const T rate, const C t = 1.)
+template<class T>
+double rtp(const T rate, const double t = 1.)
 {
   return double(1 - exp(-t * rate));
 }
@@ -98,11 +98,50 @@ char evo_nt (const TM tmat, const double ran_nr, const char old_nt)
 
 
 //Vose sampler
-void Vose_smpl_init(vector<double> & p, vector<double> & probs, 
+void Vose_smpl_init(const vector<double> & p, vector<double> & probs, 
                     vector<unsigned> & alias, const unsigned size);
 unsigned Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias, 
                     unsigned size, const vector<unsigned> & not_empty, 
                     mt19937 & gen, uniform_real_distribution<> & d);
 
+
+//RANDOM DISTRIBUTIONS
+template<class T>
+T rnorm(const double mean, const double sd, mt19937 & rng)
+{
+  normal_distribution<> norm(mean, sd);
+  return T(norm(rng));
+}
+
+template<class T>
+vector<T> rnorm(const unsigned n, const double mean, const double sd, mt19937 & rng)
+{
+  normal_distribution<> norm(mean,sd);
+  vector<T> result(n);
+
+  for (unsigned i = 0; i < n; ++i) result[i] = norm(rng);
+
+  return result;
+}
+
+template<class T>
+vector<T> rbinom(const unsigned n, const unsigned drows, const double p, mt19937 & rng)
+{
+  binomial_distribution<> binom(drows, p);
+  vector<T> result(n);
+  
+  if (drows == 0) return result;
+  for (unsigned i = 0; i < n; ++i) result[i] = binom(rng);
+
+  return result;
+}
+
+template<class T>
+T rbinom(const unsigned drows, const double p, mt19937 & rng)
+{
+  if (drows == 0) return 0;
+  binomial_distribution<> binom(drows, p);
+  return T(binom(rng));
+}
 
 #endif
