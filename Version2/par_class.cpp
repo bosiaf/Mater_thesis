@@ -43,11 +43,12 @@ const epi::par epi::read_pars(const string filename)
   string path_to_tmat = "", path_output_dyn = "", path_output_seq = "",
   seq = "", seq_in = "";
   unsigned max_tstep = 0, v0 = 0, h0 = 0, hc_ren = 0,
-  b_size = 0, seed = 0, nr_chunks = 0;
+  b_size = 0, lat_max = 0, seed = 0, nr_chunks = 0;
   vector<unsigned> SNPs, weight_not_snp;
   vector<double> fit_not_snp;
   double vol = 0., dhc = 0., dic = 0., dv = 0., dl = 0.,  
   kinf = 0., sdf = 0., kbtw = 0., inf_to_lat = 0., lat_act = 0.,
+  lat_prol = 0.;
   kmut = 0., fit_snp = 0., fit_change = 0., fit_low_cap = 0.,
   fit_high_cap = 0.;
   bool dic_fit_dep = false, dv_fit_dep = false, burst_fit_dep = false, 
@@ -104,6 +105,12 @@ const epi::par epi::read_pars(const string filename)
 
   getline(inp, s);
   lat_act = stod(s);
+
+  getline(inp, s);
+  lat_max = stoul(s);
+
+  getline(inp, s);
+  lat_prol = stod(s);
 
   getline(inp, s);
   sdf = stod(s);
