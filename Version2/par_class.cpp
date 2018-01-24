@@ -231,12 +231,14 @@ const epi::par epi::read_pars(const string filename)
   h0 *= vol;
   hc_ren *= vol;
   kinf /= vol;
+  lat_max *= vol;
+  
 
   const par a(path_output_dyn, path_output_seq,
-                     seq, max_tstep, v0, h0, hc_ren, b_size, seed,
-                     nr_chunks, SNPs, weight_not_snp, fit_not_snp,
+                     seq, max_tstep, v0, h0, hc_ren, b_size, lat_max,
+                     seed, nr_chunks, SNPs, weight_not_snp, fit_not_snp,
                      vol, dhc, dic, dv, dl, inf_to_lat, lat_act, 
-                     kinf, sdf, kbtw, kmut, fit_snp,
+                     lat_prol, kinf, sdf, kbtw, kmut, fit_snp,
                      k_fit, fit_change, fit_low_cap, fit_high_cap,
                      dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys,
                      parallel, seq_per_time, seq_print);

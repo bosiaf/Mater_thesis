@@ -310,7 +310,26 @@ bool wi_host_dyn_lat(mt19937 & rng, const epi::par & par)
 
   //precalculate mean burst of a single strain
   vector<double> b_norm = rnorm<double>(nstr, par.b_size, par.b_size/4, rng)
-  //precalculate mean removal of
+  //precalculate latent cell probability of proliferation
+  //calculate how many cells are born, and extract from a
+  //discrete distribution of what kind they are.
+  // (Just execute if lat_max is not 0)
+  if (par.lat_max != 0)
+  {
+    vector<count_t> lat_weigths(nstr);
+    vector<count_t> lat_to_add(nstr);
+    count_t lat_tot = 0;
+    for (count_t i = 0; i < nstr; ++i) 
+    {
+      lat_weights[i] = V[i]->lat;
+      lat_tot += V[i]->lat;
+    }
+ 
+    discrete_distribution<> lat_d(lat_weights.begin(), lat_weights.end());
+    const double prob_lat = rtp(par.lat_prol * (1 - lat_tot/par.lat_max));
+    const count_t how_many_lat = rbinom(lat_tot, prob_lat, rng);
+    for (count_t i = 0; i < how_many_lat; ++i) ++lat_to_add[lat_d(rng)];
+  }
 
   for (count_t i = 0; i < nstr; ++i)
   {
@@ -375,14 +394,17 @@ bool wi_host_dyn_lat(mt19937 & rng, const epi::par & par)
     //LATENT CELLS
     if (V[i]->lat != 0)
     {
-       
+      // Proliferate
+      V[i]->lat += lat_to_add[i];
+      // Death
+      V[i]->lat -= rbinom(V[i]->lat, rtp(par.dl, rng)); 
     }
     //spawn new virions
     V[i]->vir += norm_burst;
 
     //if there are no virions and infected cells of a strain,
     //eliminate that strain
-    if (!(V[i]->vir && V[i]->inf_cell)) to_elim.push_back(i);
+    if (!(V[i]->vir && V[i]->inf_cell && V[i]->lat)) to_elim.push_back(i);
     else result = true;
   }
   for (unsigned i = to_elim.size(); i > 0; --i) delete_strain(to_elim[i-1]);
@@ -394,11 +416,6 @@ bool wi_host_dyn_lat(mt19937 & rng, const epi::par & par)
   //returns 0 if no viable strain is present
   return result;
 }
-
-
-bool wi_host_dyn_lat(mt19937 & rng,)
-{}
-
 
 void evolve()
 {}
