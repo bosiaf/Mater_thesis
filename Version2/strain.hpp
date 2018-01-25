@@ -19,8 +19,6 @@ namespace epi
       count_t lat_cell;//latently infected cells
       double fitness; //fitness of the strain
  
-      //hash for sequence search speedup
-      static unsigned hash;
       
       //getters
       string get_sequence() const
@@ -32,15 +30,17 @@ namespace epi
       const count_t get_ID() const
       { return ID; }
       const unsigned get_time() const
-      { return time; } 
+      { return time; }
+      const unsigned get_hash() const
+      { return hash; } 
 
-      strain (const string & s, const double fit, const count_t v,
-              const count_t i_c, const count_t t_c, const count_t l_c, const unsigned id,
+      strain (const count_t v, const count_t i_c, const count_t t_c, 
+              const count_t l_c, 
+              const double fit, const string & s, const unsigned id,
               const unsigned t)
-      : sequence(s),
-        fitness(fit),
-        vir(v), inf_cell(i_c), temp_cell(t_c),
-        lat_cell(l_c), ID(id), time(t)
+      : vir(v), inf_cell(i_c), temp_cell(t_c),
+        lat_cell(l_c), fitness(fit),
+        sequence(s), ID(id), time(t), hash(epidemics::hs_sim(s))
       {}
       
     private:
@@ -48,6 +48,8 @@ namespace epi
       static unsigned s_size; //sequence size
       const count_t ID; //ID of the strain
       const unsigned time; //time of creation
+      //hash for sequence search speedup
+      const unsigned hash;
   };    
 }
 

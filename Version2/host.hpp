@@ -30,9 +30,8 @@ namespace epi
       //methods to propagate time
       //dynamics according to basic viral model
       bool wi_host_dyn_std(mt19937 & rng, const epi::par & par);
-      //dynamics according to a latent cell viral dynamics
-      bool wi_host_dyn_lat(mt19937 & rng, const epi::par & par);
-      void evolve();//evolve sequences
+      //evolve sequences
+      void evolve();
       
       
       //container for the strains

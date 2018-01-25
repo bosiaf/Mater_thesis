@@ -4,6 +4,7 @@
 #include<array>
 #include<vector>
 #include<random>
+#include<string>
 
 
 using namespace std;
@@ -14,6 +15,7 @@ namespace epi
   {
     public:
 
+      hash<string> = hs_sim;
       static bool is_over;//bool to see if the simulation is over
       static unsigned epi_time;//the global simulation time
       vector<*host> h_vec; //vector collecting all the infected hosts
