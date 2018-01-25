@@ -16,8 +16,8 @@ namespace epi
     public:
 
       hash<string> = hs_sim;
-      static bool is_over;//bool to see if the simulation is over
-      static unsigned epi_time;//the global simulation time
+      bool is_over;//bool to see if the simulation is over
+      unsigned epi_time;//the global simulation time
       vector<*host> h_vec; //vector collecting all the infected hosts
       const array<const array<const double, 4>, 4 > tmat = 
       {{

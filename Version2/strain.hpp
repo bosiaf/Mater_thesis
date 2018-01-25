@@ -18,7 +18,7 @@ namespace epi
       count_t temp_cell; // temporarly infected cells for evolution
       count_t lat_cell;//latently infected cells
       double fitness; //fitness of the strain
- 
+      static tot_strains; 
       
       //getters
       string get_sequence() const
@@ -40,7 +40,8 @@ namespace epi
               const unsigned t)
       : vir(v), inf_cell(i_c), temp_cell(t_c),
         lat_cell(l_c), fitness(fit),
-        sequence(s), ID(id), time(t), hash(epidemics::hs_sim(s))
+        sequence(s), ID(id), time(t), hash(epidemics::hs_sim(s)),
+        start_fit(fit)
       {}
       
     private:
@@ -50,6 +51,7 @@ namespace epi
       const unsigned time; //time of creation
       //hash for sequence search speedup
       const unsigned hash;
+      const double start_fit;
   };    
 }
 

@@ -4,6 +4,7 @@
 #include<string>
 #include<vector>
 #include<cmath>
+#include<algorithm>
 
 template <class T>
 istream& operator>>(istream& fin, vector<T> & row)
@@ -104,6 +105,21 @@ unsigned Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias
                     unsigned size, const vector<unsigned> & not_empty, 
                     mt19937 & gen, uniform_real_distribution<> & d);
 
+//function to calculate new fitness
+template<class T>
+double get_new_fitness(const T position, const vector<unsigned> & SNPs_vec, 
+                       const char old_nt, const char new_nt, mt19937 & rng,
+                       const par & par)
+{
+  //search for the mutation position in the SNP vector.
+  //If found, return true
+  
+  //generate a discrete distribution for getting new fitness.
+  dicrete_distribution<> d(par.weight_not_snp.begin(), par.weight_not_snp.end());
+  //search
+  if (binary_search(SNPs_vec.begin(), SNPs_vec.end(), position)) return par.fit_snp;
+  else return par.fit_not_snp[d(rng)];
+}
 
 //RANDOM DISTRIBUTIONS
 template<class T>
@@ -144,4 +160,40 @@ T rbinom(const unsigned drows, const double p, mt19937 & rng)
   return T(binom(rng));
 }
 
+template<class T>
+vector<T> sample_int_wo_repl(const T n, const unsigned size, mt19937 & rng)
+{
+  vector<T> result(size);
+  uniform_int_distribution<T> d(0,n-1);
+  if (size == 1)
+  {
+    result[0] = d(rng);
+  }
+  else
+  {
+    unsigned i = 0;
+    while (i < size)
+    {
+      T attempt = d(rng);
+      bool found = false;
+      for (unsigned j = 0; j < result.size(); ++j)
+      {
+        if (attempt == result[j]) 
+        {
+          found = true;
+          break;
+        }
+      }
+      
+      if (!found)
+      {
+        result[i] = attempt;
+        ++i;
+      }
+    }
+  }
+  return result;
+}
+
+}
 #endif

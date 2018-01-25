@@ -227,8 +227,8 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
 }
 
 
-void evolve(mt19937 & gen, const & array<const array<const double> > tmat, 
-            const & vector<const unsigned> SNPs_list, const double p_mut, 
+void evolve(mt19937 & rng, const array<const array<const double> > & tmat, 
+            const vector<const unsigned> & SNPs_list, const double p_mut, 
             const unsigned time, const par & par)
 {
   const unsigned s_sz = V[0]->get_size();
@@ -289,71 +289,84 @@ void evolve(mt19937 & gen, const & array<const array<const double> > tmat,
       //if not use Rabin-Karp. But a lookup-table would be nice
           if (V[i]->get_hash() == hs && V[i]->get_sequence() == sq)
           {
-            V[i]->set_icell(1);
+            if (ud(rng) > par.inf_to_lat) ++V[str]->inf_cell;
+            else ++V[str]->lat_cell;
             found = true;
             break;
           }
         }
         //if the new sequence is not found btw all the strains, create a new one
-//HERE
+
         if (!found)
         {
           //get a fitness
-          double f = V[str]->get_sequence()->get_fitness() + 
-                     get_new_fitness(ind, SNPs_list, o_nt, subst, 
-                     *(gens[omp_get_thread_num()]));
+          double f = V[str]->fitness + get_new_fitness(ind, SNPs_list, 
+                     o_nt, subst, rng, par);
           if (f < fit_low_cap) f = fit_low_cap;
           //Do not allow for fitness to increase indefinitely
           if (f > fit_high_cap) f = fit_high_cap;
           //instantiate new sequence, strain classes and add a line to host::V.
-          new_str();
-          sequences * s0 = new sequences(sq, f, hs);
-          strain * st = new strain(s0, n_str, time);
-          add_line(st);
+          if (ud(rng) > par.inf_to_lat) 
+          {
+            strain * st = new strain(0, 1, 0, 0, f, sq, tot_strains, epidemics::epi_time);
+          }
+          else  
+          {
+            strain * st = new strain(0, 0, 0, 1, f, sq, tot_strains, epidemics::epi_time);
+          }
+          add_strain(st);
         }
       }
       else if (n_mut > 1)
       {
-        vector<long int> ind = sample_int_wo_repl(s_sz, n_mut, *(gens[omp_get_thread_num()]));
-        //vector<long int> ind = sample(s_sz, n_mut, gen, ud);
+        vector<unsigned> ind = sample_int_wo_repl(s_sz, n_mut, rng);
+        
         vector<char> o_nt(n_mut);
+        
         for (unsigned m = 0; m < n_mut; ++m)
         {
           o_nt[m] = sq[ind[m]];
-          char subst = evo_nt(tmat, ud(*(gens[omp_get_thread_num()])), sq[ind[m]]);
+          char subst = evo_nt(tmat, ud(rng), sq[ind[m]]);
           sq[ind[m]] = subst;
         }
-				
-        if (s_sz > 100) hs = HS(sq.substr(0,100));
-        else hs = HS(sq);
+	
+        hs = epidemics::hs_sim(sq);
 
         bool found = false;
 
         for (unsigned i = 0; i < V.size(); ++i)
         {
-          if (V[i]->get_sequence()->hash == hs && V[i]->get_sequence()->get_sequence() == sq)
+          if (V[i]->get_hash() == hs && V[i]->get_sequence() == sq)
           {
-            V[i]->set_icell(1);
+            if (ud(rng) > par.inf_to_lat) ++V[str]->inf_cell;
+            else ++V[str]->lat_cell;
             found = true;
             break;
           }
         }
+        
         //if the new sequence is not found btw all the strains, create a new one
         if (!found)
         {
           //get a fitness
-          double f = V[str]->get_sequence()->get_fitness();
+          double f = V[str]->fitness;
           for (unsigned m = 0; m < n_mut; ++m)
           {
             f += get_new_fitness(ind[m], SNPs_list, o_nt[m], 
-                 sq[ind[m]], *(gens[omp_get_thread_num()]));
+                 sq[ind[m]], rng, par);
           }
           if (f < fit_low_cap) f = fit_low_cap;
+          if (f > fit_high_cap) f = fit_high_cap;
           //instantiate new sequence, strain classes and add a line to host::V.
-          new_str();
-          sequences * s0 = new sequences(sq, f, hs);
-          strain * st = new strain(s0, n_str, time);
-          add_line(st);
+          if (ud(rng) > par.inf_to_lat) 
+          {
+            strain * st = new strain(0, 1, 0, 0, f, sq, tot_strains, epidemics::epi_time);
+          }
+          else  
+          {
+            strain * st = new strain(0, 0, 0, 1, f, sq, tot_strains, epidemics::epi_time);
+          }
+          add_strain(st);
         }
       }
     }
