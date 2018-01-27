@@ -7,3 +7,9 @@ evolution function
 test
 
 write main file
+
+host with different spreading rate DONE
+
+Fix fitness
+
+write new_host_infection(mt19937 rng, string file);

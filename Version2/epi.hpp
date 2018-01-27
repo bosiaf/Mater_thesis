@@ -7,6 +7,10 @@
 #include<string>
 #include<memory>
 #include<list>
+#include"host.hpp"
+#include"strain.hpp"
+#include"global_fct.hpp"
+#include"par_class.hpp"
 
 
 using namespace std;
@@ -20,12 +24,14 @@ namespace epi
       hash<string> = hs_sim;
       bool is_over;//bool to see if the simulation is over
       unsigned epi_time;//the global simulation time
+      const unsigned S_df;
       vector<unique_ptr<host> > h_vec; //vector collecting all the infected hosts
 
       //Add and delete hosts
-      void add_host(const unique_ptr<host> & h)
+      void add_host(const host::count_t hc, const vector<strain> & A, 
+                    const double k_spread)
       {
-        h_vec.push_back(move(h));
+        h_vec.push_back( make_unique<host>(hc, A, k_spread) );
         ++host_nr;
       }
       
@@ -79,7 +85,26 @@ namespace epi
       };
       //END TRANSITION MATRIX
 
-      epidemics(vector<unique_ptr<host> > & h)
+      //CALCULATE NEXT INFECTION TIME
+      unsigned next_inf_time(mt19937 & rng)
+      {
+        double rate = 0;
+        //calculate overall rate
+        for (unsigned i = 0; i < h_vec.size(); ++i)
+        {
+          rate += h_vec[i]->k_spread;
+        }
+        exponential_distribution<> expd(rate*S_df);
+        double t = expd(rng);
+        cout << "Next infection time is in " << t << " days" << endl;
+        return t; 
+      }
+
+      //Infect new host
+      void new_host_infection(mt19937 rng, string path);
+
+      //Constructor
+      epidemics(const vector<unique_ptr<host> > & h, const unsigned S_df)
       : is_over(false), epi_time(0), h_vec(h), 
         host_nr(h.size())
       {}//constructor

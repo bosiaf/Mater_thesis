@@ -6,6 +6,7 @@
 #include<sstream>
 #include<iterator>
 #include"par_class.hpp"
+#include"global_fct.hpp"
 
 
 using namespace std;
@@ -43,11 +44,11 @@ const epi::par epi::read_pars(const string filename)
   string path_to_tmat = "", path_output_dyn = "", path_output_seq = "",
   seq = "", seq_in = "";
   unsigned max_tstep = 0, v0 = 0, h0 = 0, hc_ren = 0,
-  b_size = 0, lat_max = 0, seed = 0, nr_chunks = 0;
+  b_size = 0, lat_max = 0, seed = 0, nr_chunks = 0, sdf = 0;
   vector<unsigned> SNPs, weight_not_snp;
   vector<double> fit_not_snp;
   double vol = 0., dhc = 0., dic = 0., dv = 0., dl = 0.,  
-  kinf = 0., sdf = 0., kbtw = 0., inf_to_lat = 0., lat_act = 0.,
+  kinf = 0., kbtw = 0., inf_to_lat = 0., lat_act = 0.,
   lat_prol = 0.;
   kmut = 0., fit_snp = 0., fit_change = 0., fit_low_cap = 0.,
   fit_high_cap = 0.;
@@ -113,7 +114,7 @@ const epi::par epi::read_pars(const string filename)
   lat_prol = stod(s);
 
   getline(inp, s);
-  sdf = stod(s);
+  sdf = stoul(s);
 
   getline(inp, s);
   kbtw = stod(s);
@@ -232,13 +233,14 @@ const epi::par epi::read_pars(const string filename)
   hc_ren *= vol;
   kinf /= vol;
   lat_max *= vol;
+  const double pmut = rtp(kmut);
   
 
   const par a(path_output_dyn, path_output_seq,
                      seq, max_tstep, v0, h0, hc_ren, b_size, lat_max,
-                     seed, nr_chunks, SNPs, weight_not_snp, fit_not_snp,
+                     seed, nr_chunks, sdf, SNPs, weight_not_snp, fit_not_snp,
                      vol, dhc, dic, dv, dl, inf_to_lat, lat_act, 
-                     lat_prol, kinf, sdf, kbtw, kmut, fit_snp,
+                     lat_prol, kinf, kbtw, pmut, fit_snp,
                      k_fit, fit_change, fit_low_cap, fit_high_cap,
                      dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys,
                      parallel, seq_per_time, seq_print);
@@ -271,7 +273,7 @@ void epi::par::print_par() const
   cout << "Infection rate constant: " << kinf << endl;
   cout << "Disease free susceptibles: " << sdf << endl;
   cout << "Btw. host infection rate constant: " << kbtw << endl;
-  cout << "Mutation rate: " << kmut << endl;
+  cout << "Mutation probability of a nt after a day: " << pmut << endl;
   cout << "Fitness increase for SNP mutation: " << fit_snp << endl;
   cout << "Fitness changes for non-SNP mutation: ";
   for (unsigned i = 0; i < fit_not_snp.size(); ++i) cout << fit_not_snp[i] << " ";

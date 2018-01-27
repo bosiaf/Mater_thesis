@@ -12,12 +12,12 @@ namespace epi
   {
     const string path_output_dyn, path_output_seq, seq;
     const unsigned max_tstep, v0, h0, hc_ren, b_size, seed, nr_chunks,
-                   lat_max;
+                   sdf, lat_max;
     const vector<unsigned> SNPs, weight_not_snp;
     const vector<double> fit_not_snp;
-    const double vol, dhc, dic, dv, kinf, sdf, dl, inf_to_lat, lat_act, 
+    const double vol, dhc, dic, dv, kinf, dl, inf_to_lat, lat_act, 
                  lat_prol,
-                 kbtw, kmut, fit_snp, fit_change, fit_low_cap, fit_high_cap;
+                 kbtw, pmut, fit_snp, fit_change, fit_low_cap, fit_high_cap;
     const bool dic_fit_dep, dv_fit_dep, burst_fit_dep, inf_fit_dep, ad_imm_sys, parallel,
                seq_per_time, seq_print;
     void print_par() const;
@@ -26,14 +26,14 @@ namespace epi
                const unsigned max_tstep, const unsigned v0, 
                const unsigned h0, const unsigned hc_ren, const unsigned b_size, 
                const unsigned lat_max,
-               const unsigned seed, const unsigned nr_chunks,
+               const unsigned seed, const unsigned nr_chunks, const unsigned sdf, 
                const vector<unsigned> SNPs, const vector<unsigned> weight_not_snp,
                const vector<double> fit_not_snp,
                const double vol, const double dhc, const double dic, const double dv,
                const double dl, const double inf_to_lat, const double lat_act, 
                const double lat_prol,
-               const double kinf, const double sdf, const double kbtw, 
-               const double kmut, const double fit_snp,
+               const double kinf, const double kbtw, 
+               const double pmut, const double fit_snp,
                const double fit_change, const double fit_low_cap,
                const double fit_high_cap, const bool dic_fit_dep,
                const bool dv_fit_dep, const bool burst_fit_dep, const bool inf_fit_dep, 
@@ -45,13 +45,13 @@ namespace epi
                 max_tstep(max_tstep),
                 v0(v0), h0(h0), hc_ren(hc_ren),
                 b_size(b_size), lat_max(lat_max),
-                seed(seed), nr_chunks(nr_chunks),
+                seed(seed), nr_chunks(nr_chunks), sdf(sdf),
                 SNPs(SNPs), weight_not_snp(weight_not_snp),
                 fit_not_snp(fit_not_snp), vol(vol), 
-                dhc(dhc), dic(dic), dv(dv), kinf(kinf), sdf(sdf),
+                dhc(dhc), dic(dic), dv(dv), kinf(kinf),
                 dl(dl), inf_to_lat(inf_to_lat), lat_act(lat_act),
                 lat_prol(lat_prol),
-                kbtw(kbtw), kmut(kmut), fit_snp(fit_snp), k_fit(k_fit),
+                kbtw(kbtw), pmut(pmut), fit_snp(fit_snp), k_fit(k_fit),
                 fit_change(fit_change), fit_low_cap(fit_low_cap),
                 fit_high_cap(fit_high_cap), dic_fit_dep(dic_fit_dep), 
                 dv_fit_dep(dv_fit_dep), burst_fit_dep(burst_fit_dep),
