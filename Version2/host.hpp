@@ -39,10 +39,10 @@ namespace epi
       
       
       //container for the strains
-      vector<*strain> V;
+      vector<strain> V;
       
       //add and delete a strain
-      void add_strain(const strain * s) //add a strain and update nr_strains
+      void add_strain(const strain & s) //add a strain and update nr_strains
       {
         V.push_back(s);
         nr_strains = V.size();
@@ -61,7 +61,7 @@ namespace epi
       count_t healthy_cells;
       
       //constructor
-      host(const count_t hc, const vector<*strain> A)
+      host(const count_t hc, const vector<strain> & A)
       : tot_strains(0), ID(total_hosts++), healthy_cells(hc), V(A),
       nr_strains(A.size()), time(epidemics::epi_time) 
       {}

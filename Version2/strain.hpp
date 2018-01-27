@@ -18,7 +18,6 @@ namespace epi
       count_t temp_cell; // temporarly infected cells for evolution
       count_t lat_cell;//latently infected cells
       double fitness; //fitness of the strain
-      static tot_strains; 
       
       //getters
       string get_sequence() const

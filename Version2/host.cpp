@@ -6,7 +6,7 @@
 #include"host.hpp"
 
 
-bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
+bool host::wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
 {
   bool result = false;
   double prob = 0.0;
@@ -39,8 +39,8 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
 
   for (count_t i = 0; i < nstr; ++i)
   {
-    fit[i] = V[i]->fitness;
-    weight[i] = V[i]->vir;
+    fit[i] = V[i].fitness;
+    weight[i] = V[i].vir;
     sum_v += weight[i];
     //just calculate infection fitness variable if it is necessary
     if (par.inf_fit_dep)
@@ -80,8 +80,8 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
     if (d(rng))
     {
       unsigned i_str = Vose_smpl(probs, alias, nstr, weight, rng, u01);
-      --V[i_str]->vir;
-      ++V[i_str]->temp_cell;
+      --V[i_str].vir;
+      ++V[i_str].temp_cell;
       --healthy_cells;
       --weight[i_str];
       --v_sum;
@@ -130,8 +130,8 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
     count_t lat_tot = 0;
     for (count_t i = 0; i < nstr; ++i) 
     {
-      lat_weights[i] = V[i]->lat_cell;
-      lat_tot += V[i]->lat_cell;
+      lat_weights[i] = V[i].lat_cell;
+      lat_tot += V[i].lat_cell;
     }
  
     discrete_distribution<> lat_d(lat_weights.begin(), lat_weights.end());
@@ -148,16 +148,16 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
     count_t norm_burst = 0;
 
     //BURST SIZE
-    if (V[i]->inf_cell)//calculate just if there are infected cells
+    if (V[i].inf_cell)//calculate just if there are infected cells
     {
       //calculate burst with or without fitness dependency
       if (par.burst_fit_dep)
       {
-        norm_burst = static_cast<count_t>(b_norm[i]*fit[i]*V[i]->inf_cell);
+        norm_burst = static_cast<count_t>(b_norm[i]*fit[i]*V[i].inf_cell);
       }
       else
       {
-        norm_burst = static_cast<count_t>(b_norm[i]*V[i]->inf_cell);
+        norm_burst = static_cast<count_t>(b_norm[i]*V[i].inf_cell);
       }
     }
     //INFECTED CELLS REMOVAL
@@ -166,54 +166,54 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
     {
       if (par.dic_fit_dep)
       {
-        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic*icomp/fit[i]), rng);
+        V[i].inf_cell -= rbinom(V[i].inf_cell, rtp(par.dic*icomp/fit[i]), rng);
       }
       else
       {
-        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic*icomp), rng); 
+        V[i].inf_cell -= rbinom(V[i].inf_cell, rtp(par.dic*icomp), rng); 
       }
       if (par.dv_fit_dep)
       {
-        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv*icomp/fit[i]), rng);
+        V[i].vir -= rbinom(V[i].vir, rtp(par.dv*icomp/fit[i]), rng);
       }
       else
       {
-        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv*icomp), rng);
+        V[i].vir -= rbinom(V[i].vir, rtp(par.dv*icomp), rng);
       }
     }
     else
     {   
       if (par.dic_fit_dep)
       {
-        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic/fit[i]), rng);
+        V[i].inf_cell -= rbinom(V[i].inf_cell, rtp(par.dic/fit[i]), rng);
       }
       else
       {
-        V[i]->inf_cell -= rbinom(V[i]->inf_cell, rtp(par.dic), rng); 
+        V[i].inf_cell -= rbinom(V[i].inf_cell, rtp(par.dic), rng); 
       }
       if (par.dv_fit_dep)
       {
-        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv/fit[i]), rng);
+        V[i].vir -= rbinom(V[i].vir, rtp(par.dv/fit[i]), rng);
       }
       else 
       {
-        V[i]->vir -= rbinom(V[i]->vir, rtp(par.dv), rng);
+        V[i].vir -= rbinom(V[i].vir, rtp(par.dv), rng);
       }
     }   
     //LATENT CELLS
-    if (V[i]->lat_cell != 0)
+    if (V[i].lat_cell != 0)
     {
       // Proliferate
-      V[i]->lat_cell += lat_to_add[i];
+      V[i].lat_cell += lat_to_add[i];
       // Death
-      V[i]->lat_cell -= rbinom(V[i]->lat_cell, rtp(par.dl, rng)); 
+      V[i].lat_cell -= rbinom(V[i].lat_cell, rtp(par.dl, rng)); 
     }
     //spawn new virions
-    V[i]->vir += norm_burst;
+    V[i].vir += norm_burst;
 
     //if there are no virions and infected cells of a strain,
     //eliminate that strain
-    if (!(V[i]->vir && V[i]->inf_cell && V[i]->lat)) to_elim.push_back(i);
+    if (!(V[i].vir && V[i].inf_cell && V[i].lat)) to_elim.push_back(i);
     else result = true;
   }
   for (unsigned i = to_elim.size(); i > 0; --i) delete_strain(to_elim[i-1]);
@@ -227,11 +227,11 @@ bool wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
 }
 
 
-void evolve(mt19937 & rng, const array<const array<const double> > & tmat, 
+void host::evolve(mt19937 & rng, const array<const array<const double> > & tmat, 
             const vector<const unsigned> & SNPs_list, const double p_mut, 
             const unsigned time, const par & par)
 {
-  const unsigned s_sz = V[0]->get_size();
+  const unsigned s_sz = V[0].get_size();
   uniform_real_distribution<> ud(0.0, 1.0);
   //get number of mutation per sequence
   //and get where on the single sequence these mutations happen
@@ -250,22 +250,22 @@ void evolve(mt19937 & rng, const array<const array<const double> > & tmat,
   for (count_t str = 0; str < nstr; ++str)
   {
     //using this variable prevents down-scaling of for loop
-    const count_t temp = V[str]->temp_cell;
+    const count_t temp = V[str].temp_cell;
     for (int v = 0; v < temp; ++v)
     {
-      --V[str]->temp_cell;
+      --V[str].temp_cell;
       //copy sequence in order not to change the strain 
       //sequence (would affect each virion
       //in the same strain)
-      string sq = V[str]->get_sequence();
+      string sq = V[str].get_sequence();
       const count_t n_mut = rbinom(s_sz, p_mut, rng);
       //if there are no mutations...
       if (n_mut == 0)
       {
         //...directly add an infected cell and you're done
         //or a latent cell
-        if (ud(rng) > par.inf_to_lat) ++V[str]->inf_cell;
-        else ++V[str]->lat_cell;
+        if (ud(rng) > par.inf_to_lat) ++V[str].inf_cell;
+        else ++V[str].lat_cell;
       }//If there is a mutation...
       else if (n_mut == 1)
       {
@@ -287,10 +287,10 @@ void evolve(mt19937 & rng, const array<const array<const double> > & tmat,
         {
       //How to do string comparison? Maybe hash table would be the best
       //if not use Rabin-Karp. But a lookup-table would be nice
-          if (V[i]->get_hash() == hs && V[i]->get_sequence() == sq)
+          if (V[i].get_hash() == hs && V[i].get_sequence() == sq)
           {
-            if (ud(rng) > par.inf_to_lat) ++V[str]->inf_cell;
-            else ++V[str]->lat_cell;
+            if (ud(rng) > par.inf_to_lat) ++V[str].inf_cell;
+            else ++V[str].lat_cell;
             found = true;
             break;
           }
@@ -300,7 +300,7 @@ void evolve(mt19937 & rng, const array<const array<const double> > & tmat,
         if (!found)
         {
           //get a fitness
-          double f = V[str]->fitness + get_new_fitness(ind, SNPs_list, 
+          double f = V[str].fitness + get_new_fitness(ind, SNPs_list, 
                      o_nt, subst, rng, par);
           if (f < fit_low_cap) f = fit_low_cap;
           //Do not allow for fitness to increase indefinitely
@@ -336,10 +336,10 @@ void evolve(mt19937 & rng, const array<const array<const double> > & tmat,
 
         for (unsigned i = 0; i < V.size(); ++i)
         {
-          if (V[i]->get_hash() == hs && V[i]->get_sequence() == sq)
+          if (V[i].get_hash() == hs && V[i].get_sequence() == sq)
           {
-            if (ud(rng) > par.inf_to_lat) ++V[str]->inf_cell;
-            else ++V[str]->lat_cell;
+            if (ud(rng) > par.inf_to_lat) ++V[str].inf_cell;
+            else ++V[str].lat_cell;
             found = true;
             break;
           }
@@ -349,7 +349,7 @@ void evolve(mt19937 & rng, const array<const array<const double> > & tmat,
         if (!found)
         {
           //get a fitness
-          double f = V[str]->fitness;
+          double f = V[str].fitness;
           for (unsigned m = 0; m < n_mut; ++m)
           {
             f += get_new_fitness(ind[m], SNPs_list, o_nt[m], 

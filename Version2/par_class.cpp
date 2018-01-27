@@ -252,7 +252,7 @@ void epi::par::print_par() const
   cout << string(50, '*') << endl;
   
   cout << "Time steps to simulate: " << max_tstep << endl;
-  cout << "Path to transition matrix " << path_to_tmat << endl;
+  //cout << "Path to transition matrix " << path_to_tmat << endl;
   cout << "Path to output folder of dynamics files: " << path_output_dyn << endl;
   cout << "Path to output folder of sequence files: " << path_output_seq << endl;
   cout << "Initial sequence: \n" << seq << endl;

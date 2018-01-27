@@ -5,6 +5,8 @@
 #include<vector>
 #include<random>
 #include<string>
+#include<memory>
+#include<list>
 
 
 using namespace std;
@@ -18,7 +20,23 @@ namespace epi
       hash<string> = hs_sim;
       bool is_over;//bool to see if the simulation is over
       unsigned epi_time;//the global simulation time
-      vector<*host> h_vec; //vector collecting all the infected hosts
+      vector<unique_ptr<host> > h_vec; //vector collecting all the infected hosts
+
+      //Add and delete hosts
+      void add_host(const unique_ptr<host> & h)
+      {
+        h_vec.push_back(move(h));
+        ++host_nr;
+      }
+      
+      void delete_host(const unsigned ind)
+      {
+        swap(h_vec[ind], h_vec[h_vec.size()-1]);
+        h_vec.pop_back();
+        --host_nr;
+      }
+
+      //TRANSITION MATRIX
       const array<const array<const double, 4>, 4 > tmat = 
       {{
       {{0.545, 0.2475, 0.1137, 0.0937}},
@@ -59,12 +77,12 @@ namespace epi
       {
       {cs_a, cs_g, cs_c, cs_t}
       };
+      //END TRANSITION MATRIX
 
-      epidemics(vector<*host> h)
+      epidemics(vector<unique_ptr<host> > & h)
       : is_over(false), epi_time(0), h_vec(h), 
         host_nr(h.size())
       {}//constructor
-      //Create a vector containing all the strains in a host
       
       ~epidemics()
       {

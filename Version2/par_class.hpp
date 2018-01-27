@@ -10,7 +10,7 @@ namespace epi
 {
   struct par
   {
-    const string path_to_tmat, path_output_dyn, path_output_seq, seq;
+    const string path_output_dyn, path_output_seq, seq;
     const unsigned max_tstep, v0, h0, hc_ren, b_size, seed, nr_chunks,
                    lat_max;
     const vector<unsigned> SNPs, weight_not_snp;
