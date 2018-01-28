@@ -36,11 +36,10 @@ namespace epi
       strain (const count_t v, const count_t i_c, const count_t t_c, 
               const count_t l_c, 
               const double fit, const string & s, const unsigned id,
-              const unsigned t)
+              const unsigned t, const unsigned hash)
       : vir(v), inf_cell(i_c), temp_cell(t_c),
         lat_cell(l_c), fitness(fit),
-        sequence(s), ID(id), time(t), hash(epidemics::hs_sim(s)),
-        start_fit(fit)
+        sequence(s), ID(id), time(t), hash(hash)
       {}
       
     private:
@@ -50,7 +49,6 @@ namespace epi
       const unsigned time; //time of creation
       //hash for sequence search speedup
       const unsigned hash;
-      const double start_fit;
   };    
 }
 

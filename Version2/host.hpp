@@ -35,7 +35,7 @@ namespace epi
       //evolve sequences
       void evolve(mt19937 & rng, const array<const array <const double> > & tmat,
                   const vector<const unsigned> & SNPs_list, const double p_mut,
-                  const unsigned time, const par & par);
+                  const unsigned t, const unsigned hash, const par & par);
       
       
       //container for the strains
@@ -45,9 +45,9 @@ namespace epi
       void add_strain(const strain::count_t v, const strain::count_t i_c,
                       const strain::count_t t_c, const strain::count_t l_c,
                       const double fit, const string & s,
-                      const unsigned t) //add a strain and update nr_strains
+                      const unsigned t, const unsigned hash) //add a strain and update nr_strains
       {
-        V.emplace_back(v, i_c, t_c, l_c, fit, s, tot_strains, t);
+        V.emplace_back(v, i_c, t_c, l_c, fit, s, tot_strains, t, hash);
         nr_strains = V.size();
         ++tot_strains;
       }
@@ -68,9 +68,10 @@ namespace epi
       const double k_spread;
       
       //constructor
-      host(const count_t hc, const vector<strain> & A, const double k_spread)
+      host(const count_t hc, const vector<strain> & A, const double k_spread,
+           const unsigned t)
       : tot_strains(0), V(A), healthy_cells(hc), k_spread(k_spread),
-      nr_strains(A.size()), ID(total_hosts++), time(epidemics::epi_time) 
+      nr_strains(A.size()), ID(total_hosts++), time(t) 
       {}
 
       //destructor

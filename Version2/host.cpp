@@ -229,7 +229,7 @@ bool host::wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
 
 void host::evolve(mt19937 & rng, const array<const array<const double> > & tmat, 
             const vector<const unsigned> & SNPs_list, const double p_mut, 
-            const unsigned time, const par & par)
+            const unsigned t, const unsigned hash, const par & par)
 {
   const unsigned s_sz = V[0].get_size();
   uniform_real_distribution<> ud(0.0, 1.0);
@@ -279,7 +279,7 @@ void host::evolve(mt19937 & rng, const array<const array<const double> > & tmat,
         sq[ind] = subst;
 
       //calculate hash of sequence to look for it
-        hs = epidemics::hs_sim(sq);
+        hs = hs_sim(sq);
 
       //now look for the sequence in the already available sequences
         bool found = false;
@@ -308,13 +308,12 @@ void host::evolve(mt19937 & rng, const array<const array<const double> > & tmat,
           //instantiate new sequence, strain classes and add a line to host::V.
           if (ud(rng) > par.inf_to_lat) 
           {
-            strain * st = new strain(0, 1, 0, 0, f, sq, tot_strains, epidemics::epi_time);
+            add_strain(0, 1, 0, 0, f, sq, t, hs_sim(sq));
           }
           else  
           {
-            strain * st = new strain(0, 0, 0, 1, f, sq, tot_strains, epidemics::epi_time);
+            add_strain(0, 0, 0, 1, f, sq, t, hs_sim(sq));
           }
-          add_strain(st);
         }
       }
       else if (n_mut > 1)
@@ -330,7 +329,7 @@ void host::evolve(mt19937 & rng, const array<const array<const double> > & tmat,
           sq[ind[m]] = subst;
         }
 	
-        hs = epidemics::hs_sim(sq);
+        hs = hs_sim(sq);
 
         bool found = false;
 
@@ -360,13 +359,12 @@ void host::evolve(mt19937 & rng, const array<const array<const double> > & tmat,
           //instantiate new sequence, strain classes and add a line to host::V.
           if (ud(rng) > par.inf_to_lat) 
           {
-            strain * st = new strain(0, 1, 0, 0, f, sq, tot_strains, epidemics::epi_time);
+            add_strain(0, 1, 0, 0, f, sq, t, hs_sim(sq));
           }
           else  
           {
-            strain * st = new strain(0, 0, 0, 1, f, sq, tot_strains, epidemics::epi_time);
+            add_strain(0, 0, 0, 1, f, sq, t, hs_sim(sq));
           }
-          add_strain(st);
         }
       }
     }

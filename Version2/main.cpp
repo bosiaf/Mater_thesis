@@ -2,6 +2,7 @@
 #include<random>
 #include<string>
 #include<memory>
+#include<functional>
 #include<cstdlib>
 
 
@@ -10,7 +11,7 @@ using namespace epi;
 
 //Initialize static class members
 host::count_t host::total_hosts = 0;//current host number in epidemics
-
+hash<string> hs_sim;
 
 int main(int argc, char * argv[])
 {
@@ -53,7 +54,7 @@ int main(int argc, char * argv[])
   //add the first host to the epidemics
   e.add_host(a.h0, V, ss_w[host_spread(rng)]);
   //add the first strain to the first host
-  e.h_vec[0]->add.strain(a.v0, 0, 0, 0, 1, a.seq, e.epi_time);
+  e.h_vec[0]->add_strain(a.v0, 0, 0, 0, 1, a.seq, e.epi_time, hs_sim(a.seq));
 
   //calculate next infection time
   unsigned t_next_inf = e.next_inf_time(rng);
@@ -65,11 +66,9 @@ int main(int argc, char * argv[])
     //check if new host is to be infected
     while (t_next_inf == 0)
     {
-      cout << "New host infected at time " << e.get_time() << "!" << endl;
-      e.new_host_infection(rng, a.path_output_dyn);
-      cout << "Virion number of new strain is ";
-      cout << e.h_vec.back()->V.back().vir << endl;
-      t_next_inf = e.next_inf_time(rng);
+      cout << "New host infected at time " << e.get_time() << "!" << endl;//print current time
+      e.new_host_infection(rng, a.path_output_dyn);//infect a new host
+      t_next_inf = e.next_inf_time(rng);//produce a new infection time
     }
   }
 

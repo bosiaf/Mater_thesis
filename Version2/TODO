@@ -10,6 +10,8 @@ write main file
 
 host with different spreading rate DONE
 
-Fix fitness
+Fix fitness DONE
 
 write new_host_infection(mt19937 rng, string file);
+- Done
+-still needs to know what to do with printing/sampling
