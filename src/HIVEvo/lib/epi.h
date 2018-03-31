@@ -8,10 +8,10 @@
 #include<cmath>
 #include<memory>
 #include<list>
-#include"host.hpp"
-#include"strain.hpp"
-#include"global_fct.hpp"
-#include"par_class.hpp"
+#include"host.h"
+#include"strain.h"
+#include"global_fct.h"
+#include"par_class.h"
 
 
 using namespace std;

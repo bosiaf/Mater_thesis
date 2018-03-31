@@ -1,7 +1,7 @@
 #ifndef HOST_HPP
 #define HOST_HPP
 
-#include"strain.hpp"
+#include"strain.h"
 #include<iostream>
 #include<string>
 #include<vector>

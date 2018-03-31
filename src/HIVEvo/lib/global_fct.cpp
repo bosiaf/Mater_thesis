@@ -1,5 +1,5 @@
 #include<iostream>
-#include"global_fct.hpp"
+#include"global_fct.h"
 
 using namespace std;
 

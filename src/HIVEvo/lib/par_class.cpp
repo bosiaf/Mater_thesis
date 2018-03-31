@@ -5,8 +5,8 @@
 #include<fstream>
 #include<sstream>
 #include<iterator>
-#include"par_class.hpp"
-#include"global_fct.hpp"
+#include"par_class.h"
+#include"global_fct.h"
 
 
 using namespace std;

@@ -3,7 +3,7 @@
 #include<random>
 #include<functional>
 #include<array>
-#include"host.hpp"
+#include"host.h"
 
 
 bool host::wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
@@ -64,7 +64,7 @@ bool host::wi_host_dyn_dyn(mt19937 & rng, const epi::par & par)
   //initialize Vose sampler
   Vose_smpl_init(w_norm, probs, alias, nstr);
 
-  cout << "Starting main infection loop with " << hc;
+  cout << "Starting example infection loop with " << hc;
   cout << " healthy cells and " << nstr << " strains." endl;
 
 

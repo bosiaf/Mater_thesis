@@ -1,5 +1,5 @@
 #include<iostream>
-#include"../par_class.hpp"
+#include"../lib/par_class.h"
 
 using namespace epi;
 
