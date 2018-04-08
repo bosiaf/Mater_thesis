@@ -12,6 +12,5 @@ include(Utils)
 
 add_subdirectory(HIVEvo)
 
-
 hivevo_install_cmake_target_file(hivevo)
 hivevo_install_cmake_config(hivevo)
