@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const epi::par epi::read_pars(const string filename)
+const epi::par epi::read_pars(const string& filename)
 {
   ifstream file_in(filename);
 
@@ -23,7 +23,7 @@ const epi::par epi::read_pars(const string filename)
   
   //create buffers
   stringstream inp("");
-  string s = "";
+  string s;
  
   //read lines from file into s and eliminate # comments
   while (getline(file_in, s))
@@ -38,19 +38,18 @@ const epi::par epi::read_pars(const string filename)
   file_in.close();
 
   //create string buffers for vectors
-  string snps = "", fit_not_snp_str = "", weight_not_snp_str = "";
+  string snps, fit_not_snp_str, weight_not_snp_str;
 
   //declare temporary variables, and define
-  string path_to_tmat = "", path_output_dyn = "", path_output_seq = "",
-  seq = "", seq_in = "";
+  string path_to_tmat, path_output_dyn, path_output_seq,
+    seq, seq_in;
   unsigned max_tstep = 0, v0 = 0, h0 = 0, hc_ren = 0,
   b_size = 0, lat_max = 0, seed = 0, nr_chunks = 0, sdf = 0;
   vector<unsigned> SNPs, weight_not_snp;
   vector<double> fit_not_snp;
   double vol = 0., dhc = 0., dic = 0., dv = 0., dl = 0.,  
-  kinf = 0., kbtw = 0., inf_to_lat = 0., lat_act = 0.,
-  lat_prol = 0.;
-  kmut = 0., fit_snp = 0., fit_change = 0., fit_low_cap = 0.,
+  kinf = 0., kbtw = 0., inf_to_lat = 0., lat_act = 0., k_fit = 0.,
+  lat_prol = 0., kmut = 0., fit_snp = 0., fit_change = 0., fit_low_cap = 0.,
   fit_high_cap = 0.;
   bool dic_fit_dep = false, dv_fit_dep = false, burst_fit_dep = false, 
        inf_fit_dep = false, ad_imm_sys = false, parallel = false, 
@@ -145,6 +144,8 @@ const epi::par epi::read_pars(const string filename)
   getline(inp, s);
   fit_high_cap = stod(s);
   getline(inp, s);
+  k_fit = stod(s);
+  getline(inp, s);
   seed = stoul(s);
   getline(inp, s);
   nr_chunks = stoul(s);
@@ -167,7 +168,7 @@ const epi::par epi::read_pars(const string filename)
   {
     //read in start and end of range delimited by dash
     unsigned long start = 0, end = 0;
-    string element = "";
+    string element;
     stringstream read_range(snps);
     getline(read_range, element, '-');
     stringstream field(element);
@@ -240,8 +241,8 @@ const epi::par epi::read_pars(const string filename)
                      seq, max_tstep, v0, h0, hc_ren, b_size, lat_max,
                      seed, nr_chunks, sdf, SNPs, weight_not_snp, fit_not_snp,
                      vol, dhc, dic, dv, dl, inf_to_lat, lat_act, 
-                     lat_prol, kinf, kbtw, pmut, fit_snp,
-                     k_fit, fit_change, fit_low_cap, fit_high_cap,
+                     lat_prol, k_fit, kinf, kbtw, pmut, fit_snp,
+                     fit_change, fit_low_cap, fit_high_cap,
                      dic_fit_dep, dv_fit_dep, inf_fit_dep, ad_imm_sys,
                      parallel, seq_per_time, seq_print);
 
@@ -260,7 +261,7 @@ void epi::par::print_par() const
   cout << "Initial sequence: \n" << seq << endl;
   cout << "Sequence size is: " << seq.size() << endl;
   cout << "Location of SNPs: ";
-  for (unsigned i = 0; i < SNPs.size(); ++i) cout << SNPs[i] << " ";
+  for (unsigned int SNP : SNPs) cout << SNP << " ";
   cout << endl;
   cout << "The simulation volume is " << vol << " mm^3" << endl;
   cout << "Initial virions: " << v0 << endl;
@@ -273,12 +274,13 @@ void epi::par::print_par() const
   cout << "Infection rate constant: " << kinf << endl;
   cout << "Disease free susceptibles: " << sdf << endl;
   cout << "Btw. host infection rate constant: " << kbtw << endl;
+  cout << "Change of infection fitness with age of strain exponential parameter: " << k_fit << endl;
   cout << "Mutation probability of a nt after a day: " << pmut << endl;
   cout << "Fitness increase for SNP mutation: " << fit_snp << endl;
   cout << "Fitness changes for non-SNP mutation: ";
-  for (unsigned i = 0; i < fit_not_snp.size(); ++i) cout << fit_not_snp[i] << " ";
+  for (double i : fit_not_snp) cout << i << " ";
   cout << endl;
   cout << "Probability weight of change in fitness: ";
-  for (unsigned i = 0; i < weight_not_snp.size(); ++i) cout << weight_not_snp[i] << " ";
+  for (unsigned int i : weight_not_snp) cout << i << " ";
   cout << endl;
 }
