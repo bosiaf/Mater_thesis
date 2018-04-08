@@ -3,7 +3,7 @@
 
 using namespace std;
 
-int nt_to_i (const char nt)
+int epi::nt_to_i (const char nt)
 {
   if (nt == 'A') return 0;
   else if (nt == 'G') return 1;
@@ -17,7 +17,7 @@ int nt_to_i (const char nt)
   }
 }
 
-char i_to_nt (const int nt)
+char epi::i_to_nt (const int nt)
 {
   if (nt == 0) return 'A';
   else if (nt == 1) return 'G';
@@ -31,9 +31,23 @@ char i_to_nt (const int nt)
   }
 }
 
+//takes a double transition matrix, a random number and an old nucleotide and
+//gives a new nucleotide.
+char epi::evo_nt(const double ran_nr, const char old_nt) {
+  int nt = nt_to_i(old_nt);
+  int new_nt = 0;
+  auto oldNucleotideRowCumulativeSum = epi::TransitionMatrix().matrixOfCumulativeSums[nt];
+  for (unsigned i = 0; i < 4; ++i) {
+    if (ran_nr < oldNucleotideRowCumulativeSum[i]) {
+      new_nt = i;
+      break;
+    }
+  }
+  return i_to_nt(new_nt);
+}
 
 //Vose sampler
-void Vose_smpl_init(vector<double> & p, vector<double> & probs, 
+void epi::Vose_smpl_init(vector<double> & p, vector<double> & probs,
                     vector<unsigned> & alias, const unsigned size)
 {
   unsigned l = 0, s = 0;
@@ -77,7 +91,7 @@ void Vose_smpl_init(vector<double> & p, vector<double> & probs,
   while (s > 0)
   {
     --s;
-    progs[s] 0 1;
+    probs[s] = 1;
   }
   while (l > 0)
   {
@@ -87,7 +101,7 @@ void Vose_smpl_init(vector<double> & p, vector<double> & probs,
 }
 
 
-unsigned Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias, 
+unsigned epi::Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias,
                     unsigned size, const vector<unsigned> & not_empty, 
                     mt19937 & gen, uniform_real_distribution<> & d)
 {
@@ -108,5 +122,16 @@ unsigned Vose_smpl (const vector<double> & probs, const vector<unsigned> & alias
   }
 }
 
+std::istream& epi::operator>> (std::istream& fin, std::vector<std::vector<double> >& table) {
+//clear everything that might be in the table
+  table.clear();
+  std::vector<double> row;
+
+  while (fin >> row) {
+    table.push_back(row);
+  }
+//return new input
+  return fin;
+}
 //RANDOM DISTRIBUTIONS
 
